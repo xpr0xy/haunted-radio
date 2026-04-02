@@ -626,7 +626,6 @@ async function loadStation(station) {
       const check = await fetch(proxyUrl, { method: 'GET', signal: AbortSignal.timeout(5000) });
       if (!check.ok) continue;
       const ct = check.headers.get('content-type') || '';
-      // abort the body stream — we just wanted to check headers
       check.body?.cancel();
       if (!ct.includes('audio') && !ct.includes('octet-stream') && !ct.includes('mpeg')) continue;
       if (myId !== S.loadId) return;
@@ -636,11 +635,12 @@ async function loadStation(station) {
       audio.preload = 'auto';
       audio.src = proxyUrl;
 
+      // live streams need .play() to start, then wait for 'playing' event
       await new Promise((resolve, reject) => {
-        audio.addEventListener('loadeddata', resolve, { once: true });
+        audio.addEventListener('playing', resolve, { once: true });
         audio.addEventListener('error', reject, { once: true });
         setTimeout(reject, 8000);
-        audio.load();
+        audio.play().catch(reject);
       });
 
       if (myId !== S.loadId) { audio.pause(); audio.src = ''; audio.remove(); return; }
@@ -648,7 +648,6 @@ async function loadStation(station) {
       S.audioEl = audio;
       S.sourceNode = S.ctx.createMediaElementSource(audio);
       S.sourceNode.connect(S.chain.inputGain);
-      audio.play().catch(() => {});
       statusBar.textContent = 'broadcasting · effects active';
       return;
     } catch {
@@ -664,16 +663,15 @@ async function loadStation(station) {
     audio.src = station.url;
 
     await new Promise((resolve, reject) => {
-      audio.addEventListener('loadeddata', resolve, { once: true });
+      audio.addEventListener('playing', resolve, { once: true });
       audio.addEventListener('error', reject, { once: true });
       setTimeout(reject, 10000);
-      audio.load();
+      audio.play().catch(reject);
     });
 
     if (myId !== S.loadId) { audio.pause(); audio.src = ''; audio.remove(); return; }
 
     S.audioEl = audio;
-    audio.play().catch(() => {});
     statusBar.textContent = 'raw signal · effects need CORS proxy';
   } catch {
     if (myId !== S.loadId) return;
