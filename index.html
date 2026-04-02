@@ -2,244 +2,270 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Haunted Radio</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Special+Elite&display=swap');
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
   body {
-    background: #0a0a0a;
-    color: #c4a265;
+    background: #080808;
+    color: #e8c97a;
     font-family: 'JetBrains Mono', monospace;
-    overflow: hidden;
-    height: 100vh;
+    overflow-x: hidden;
+    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     user-select: none;
+    -webkit-user-select: none;
+    padding: 16px;
   }
 
   #scanlines {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 100;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.03) 2px,
-      rgba(0,0,0,0.03) 4px
-    );
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 100;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
     mix-blend-mode: multiply;
   }
 
   #grain {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 99;
-    opacity: 0.04;
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 99;
+    opacity: 0.035;
     animation: grain 0.5s steps(6) infinite;
   }
 
   @keyframes grain {
-    0%, 100% { transform: translate(0, 0); }
-    10% { transform: translate(-5%, -10%); }
-    20% { transform: translate(-15%, 5%); }
-    30% { transform: translate(7%, -25%); }
-    40% { transform: translate(-5%, 25%); }
-    50% { transform: translate(-15%, 10%); }
-    60% { transform: translate(15%, 0%); }
-    70% { transform: translate(0%, 15%); }
-    80% { transform: translate(3%, 35%); }
-    90% { transform: translate(-10%, 10%); }
+    0%,100% { transform: translate(0,0) }
+    10% { transform: translate(-5%,-10%) }
+    20% { transform: translate(-15%,5%) }
+    30% { transform: translate(7%,-25%) }
+    40% { transform: translate(-5%,25%) }
+    50% { transform: translate(-15%,10%) }
+    60% { transform: translate(15%,0%) }
+    70% { transform: translate(0%,15%) }
+    80% { transform: translate(3%,35%) }
+    90% { transform: translate(-10%,10%) }
   }
 
   .container {
     position: relative;
-    width: 90vw;
-    max-width: 900px;
+    width: 100%;
+    max-width: 520px;
     z-index: 10;
   }
 
   .header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 24px;
     opacity: 0;
     animation: fadeIn 2s ease forwards;
   }
 
   .header h1 {
     font-family: 'Special Elite', cursive;
-    font-size: 2.8em;
-    color: #c4a265;
-    text-shadow: 0 0 40px rgba(196, 162, 101, 0.3);
-    letter-spacing: 8px;
+    font-size: clamp(1.6em, 6vw, 2.6em);
+    color: #f0d590;
+    text-shadow: 0 0 30px rgba(240,213,144,0.35), 0 0 60px rgba(240,213,144,0.1);
+    letter-spacing: 6px;
     text-transform: uppercase;
   }
 
   .header .subtitle {
     font-size: 0.7em;
-    color: #5a4a2f;
-    margin-top: 5px;
-    letter-spacing: 4px;
+    color: #9a8350;
+    margin-top: 4px;
+    letter-spacing: 3px;
   }
 
   .dial-container {
-    position: relative;
     width: 100%;
-    height: 200px;
-    margin: 20px 0;
+    height: 160px;
+    margin: 12px 0;
   }
 
   #dialCanvas {
     width: 100%;
     height: 100%;
     cursor: grab;
+    touch-action: none;
   }
 
   #dialCanvas:active { cursor: grabbing; }
 
   .station-display {
     text-align: center;
-    margin: 20px 0;
-    min-height: 80px;
+    margin: 12px 0;
+    min-height: 70px;
   }
 
   .station-name {
     font-family: 'Special Elite', cursive;
-    font-size: 1.4em;
-    color: #e8d5a3;
-    text-shadow: 0 0 20px rgba(232, 213, 163, 0.2);
-    transition: all 0.3s;
+    font-size: clamp(1em, 4vw, 1.4em);
+    color: #f5e6b8;
+    text-shadow: 0 0 15px rgba(245,230,184,0.25);
+    transition: opacity 0.2s;
+    line-height: 1.3;
   }
 
   .station-meta {
-    font-size: 0.75em;
-    color: #5a4a2f;
-    margin-top: 8px;
+    font-size: 0.7em;
+    color: #a08d5a;
+    margin-top: 6px;
     letter-spacing: 2px;
   }
 
   .station-unknown {
-    color: #3a3a2a;
+    color: #6a5d3a;
     font-style: italic;
   }
 
   .fx-panel {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin: 25px 0;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin: 16px 0;
   }
 
   .fx-knob {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    opacity: 0.5;
-    transition: opacity 0.3s;
+    gap: 4px;
+    padding: 8px 4px;
+    border: 1px solid #1a1608;
+    border-radius: 4px;
+    background: rgba(20,16,8,0.5);
   }
 
-  .fx-knob.active { opacity: 1; }
-
   .fx-knob .label {
-    font-size: 0.6em;
-    color: #5a4a2f;
-    letter-spacing: 2px;
+    font-size: 0.55em;
+    color: #a08d5a;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
   }
 
   .fx-knob .value {
-    font-size: 0.9em;
-    color: #c4a265;
-    min-width: 30px;
+    font-size: 0.75em;
+    color: #f0d590;
+    min-width: 24px;
     text-align: center;
   }
 
   .fx-knob input[type="range"] {
     -webkit-appearance: none;
-    width: 80px;
-    height: 3px;
-    background: #2a2a1a;
-    border-radius: 2px;
+    width: 100%;
+    max-width: 70px;
+    height: 20px;
+    background: transparent;
     outline: none;
+    cursor: pointer;
+  }
+
+  .fx-knob input[type="range"]::-webkit-slider-runnable-track {
+    height: 3px;
+    background: #2a2210;
+    border-radius: 2px;
   }
 
   .fx-knob input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
-    background: #c4a265;
+    background: #e8c97a;
+    margin-top: -8px;
+    box-shadow: 0 0 8px rgba(232,201,122,0.4);
     cursor: pointer;
-    box-shadow: 0 0 10px rgba(196, 162, 101, 0.4);
+  }
+
+  .fx-knob input[type="range"]::-moz-range-track {
+    height: 3px;
+    background: #2a2210;
+    border-radius: 2px;
+    border: none;
+  }
+
+  .fx-knob input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #e8c97a;
+    border: none;
+    box-shadow: 0 0 8px rgba(232,201,122,0.4);
+    cursor: pointer;
   }
 
   .power-section {
     text-align: center;
-    margin-top: 30px;
+    margin-top: 20px;
   }
 
   .power-btn {
     font-family: 'Special Elite', cursive;
-    font-size: 1.1em;
-    letter-spacing: 4px;
+    font-size: 1em;
+    letter-spacing: 3px;
     text-transform: uppercase;
-    background: none;
-    border: 1px solid #3a3a2a;
-    color: #5a4a2f;
-    padding: 12px 40px;
+    background: rgba(20,16,8,0.6);
+    border: 1px solid #3a3018;
+    color: #8a7a4a;
+    padding: 14px 36px;
     cursor: pointer;
-    transition: all 0.5s;
-    position: relative;
-    overflow: hidden;
+    transition: all 0.4s;
+    border-radius: 2px;
+    min-width: 180px;
+    touch-action: manipulation;
   }
 
-  .power-btn:hover {
-    border-color: #c4a265;
-    color: #c4a265;
-    box-shadow: 0 0 30px rgba(196, 162, 101, 0.1);
+  .power-btn:hover, .power-btn:active {
+    border-color: #e8c97a;
+    color: #e8c97a;
+    box-shadow: 0 0 25px rgba(232,201,122,0.12);
   }
 
   .power-btn.on {
-    border-color: #c4a265;
-    color: #e8d5a3;
-    box-shadow: 0 0 40px rgba(196, 162, 101, 0.15);
+    border-color: #e8c97a;
+    color: #f5e6b8;
+    box-shadow: 0 0 35px rgba(232,201,122,0.18);
     animation: pulse 3s ease-in-out infinite;
   }
 
   @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 40px rgba(196, 162, 101, 0.15); }
-    50% { box-shadow: 0 0 60px rgba(196, 162, 101, 0.25); }
+    0%,100% { box-shadow: 0 0 35px rgba(232,201,122,0.18) }
+    50% { box-shadow: 0 0 55px rgba(232,201,122,0.28) }
   }
 
   .status-bar {
-    position: fixed;
-    bottom: 20px;
-    left: 0;
-    right: 0;
     text-align: center;
-    font-size: 0.65em;
-    color: #2a2a1a;
-    letter-spacing: 3px;
+    font-size: 0.6em;
+    color: #5a4d2e;
+    letter-spacing: 2px;
+    margin-top: 16px;
     z-index: 10;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  @media (max-width: 600px) {
-    .header h1 { font-size: 1.8em; letter-spacing: 4px; }
-    .fx-knob input[type="range"] { width: 60px; }
+  @media (max-width: 380px) {
+    .fx-panel { grid-template-columns: repeat(3, 1fr); }
+    .dial-container { height: 130px; }
+  }
+
+  @media (max-height: 600px) {
+    .dial-container { height: 110px; }
+    .header { margin-bottom: 12px; }
+    .station-display { min-height: 50px; margin: 6px 0; }
+    .fx-panel { margin: 8px 0; gap: 4px; }
+    .power-section { margin-top: 10px; }
+    .power-btn { padding: 10px 28px; }
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(8px) }
+    to { opacity: 1; transform: translateY(0) }
   }
 </style>
 </head>
@@ -266,537 +292,565 @@
   </div>
 
   <div class="fx-panel">
-    <div class="fx-knob" id="fxDecay">
+    <div class="fx-knob">
       <span class="label">decay</span>
-      <input type="range" min="0" max="100" value="30" id="decaySlider">
-      <span class="value" id="decayVal">30</span>
+      <input type="range" min="0" max="100" value="40" id="decaySlider">
+      <span class="value" id="decayVal">40</span>
     </div>
-    <div class="fx-knob" id="fxWobble">
+    <div class="fx-knob">
       <span class="label">wobble</span>
-      <input type="range" min="0" max="100" value="40" id="wobbleSlider">
-      <span class="value" id="wobbleVal">40</span>
+      <input type="range" min="0" max="100" value="50" id="wobbleSlider">
+      <span class="value" id="wobbleVal">50</span>
     </div>
-    <div class="fx-knob" id="fxSaturation">
+    <div class="fx-knob">
       <span class="label">dirt</span>
-      <input type="range" min="0" max="100" value="25" id="satSlider">
-      <span class="value" id="satVal">25</span>
+      <input type="range" min="0" max="100" value="35" id="satSlider">
+      <span class="value" id="satVal">35</span>
     </div>
-    <div class="fx-knob" id="fxReverb">
+    <div class="fx-knob">
       <span class="label">void</span>
-      <input type="range" min="0" max="100" value="50" id="reverbSlider">
-      <span class="value" id="reverbVal">50</span>
+      <input type="range" min="0" max="100" value="60" id="reverbSlider">
+      <span class="value" id="reverbVal">60</span>
     </div>
-    <div class="fx-knob" id="fxStatic">
+    <div class="fx-knob">
       <span class="label">static</span>
-      <input type="range" min="0" max="100" value="20" id="staticSlider">
-      <span class="value" id="staticVal">20</span>
+      <input type="range" min="0" max="100" value="25" id="staticSlider">
+      <span class="value" id="staticVal">25</span>
     </div>
   </div>
 
   <div class="power-section">
     <button class="power-btn" id="powerBtn">tune in</button>
   </div>
+
+  <div class="status-bar" id="statusBar">loading stations…</div>
 </div>
 
-<div class="status-bar" id="statusBar">scroll or drag to tune • space to power</div>
-
 <script>
-// ─── CORS proxy for audio streams ──────────────────────────────
-const CORS_PROXIES = [
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-];
-
 // ─── State ──────────────────────────────────────────────────────
-const state = {
+const S = {
   powered: false,
   stations: [],
-  currentStation: null,
   stationIndex: 0,
   dialPosition: 0,
-  audioCtx: null,
-  nodes: {},
-  loading: true,
   dragging: false,
-  useProcessing: true,
+  loading: true,
+  // audio
+  ctx: null,          // AudioContext
+  audioEl: null,      // current Audio element
+  sourceNode: null,   // MediaElementSource (single, reused)
+  chain: {},          // processing chain nodes
+  loadId: 0,          // generation counter
 };
 
-// ─── DOM refs ───────────────────────────────────────────────────
-const canvas = document.getElementById('dialCanvas');
-const ctx = canvas.getContext('2d');
-const powerBtn = document.getElementById('powerBtn');
-const stationName = document.getElementById('stationName');
-const stationMeta = document.getElementById('stationMeta');
-const statusBar = document.getElementById('statusBar');
+// ─── DOM ────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const canvas = $('dialCanvas');
+const c = canvas.getContext('2d');
+const powerBtn = $('powerBtn');
+const stationName = $('stationName');
+const stationMeta = $('stationMeta');
+const statusBar = $('statusBar');
 
 const sliders = {
-  decay: document.getElementById('decaySlider'),
-  wobble: document.getElementById('wobbleSlider'),
-  saturation: document.getElementById('satSlider'),
-  reverb: document.getElementById('reverbSlider'),
-  static: document.getElementById('staticSlider'),
+  decay:      { el: $('decaySlider'),    val: $('decayVal') },
+  wobble:     { el: $('wobbleSlider'),   val: $('wobbleVal') },
+  saturation: { el: $('satSlider'),      val: $('satVal') },
+  reverb:     { el: $('reverbSlider'),   val: $('reverbVal') },
+  static:     { el: $('staticSlider'),   val: $('staticVal') },
 };
 
-// ─── Grain texture ──────────────────────────────────────────────
-(function initGrain() {
+// wire sliders
+for (const k in sliders) {
+  const { el, val } = sliders[k];
+  el.addEventListener('input', () => { val.textContent = el.value; updateFX(); });
+}
+
+// ─── Grain ──────────────────────────────────────────────────────
+(function() {
   const gc = document.createElement('canvas');
-  gc.width = 256; gc.height = 256;
-  const gctx = gc.getContext('2d');
-  const imgData = gctx.createImageData(256, 256);
-  for (let i = 0; i < imgData.data.length; i += 4) {
+  gc.width = gc.height = 256;
+  const gx = gc.getContext('2d');
+  const d = gx.createImageData(256, 256);
+  for (let i = 0; i < d.data.length; i += 4) {
     const v = Math.random() * 255;
-    imgData.data[i] = imgData.data[i+1] = imgData.data[i+2] = v;
-    imgData.data[i+3] = 255;
+    d.data[i] = d.data[i+1] = d.data[i+2] = v;
+    d.data[i+3] = 255;
   }
-  gctx.putImageData(imgData, 0, 0);
-  document.getElementById('grain').style.backgroundImage = `url(${gc.toDataURL()})`;
+  gx.putImageData(d, 0, 0);
+  $('grain').style.backgroundImage = `url(${gc.toDataURL()})`;
 })();
 
-// ─── Canvas setup ───────────────────────────────────────────────
-function resizeCanvas() {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  canvas.width = rect.width * window.devicePixelRatio;
-  canvas.height = rect.height * window.devicePixelRatio;
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+// ─── Canvas ─────────────────────────────────────────────────────
+function resize() {
+  const r = canvas.parentElement.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = r.width * dpr;
+  canvas.height = r.height * dpr;
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+window.addEventListener('resize', resize);
+resize();
 
-// ─── Fetch stations (direct from radio-browser.info) ────────────
+// ─── Fetch stations ─────────────────────────────────────────────
 async function loadStations() {
-  statusBar.textContent = 'scanning frequencies...';
-  const apiUrls = [
+  statusBar.textContent = 'scanning frequencies…';
+  const apis = [
     'https://de1.api.radio-browser.info',
     'https://nl1.api.radio-browser.info',
     'https://at1.api.radio-browser.info',
   ];
-
-  for (const base of apiUrls) {
+  for (const base of apis) {
     try {
-      const url = `${base}/json/stations/search?limit=200&order=clickcount&reverse=true&hidebroken=true&has_https_failover=true`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-      if (!res.ok) continue;
-      const data = await res.json();
-      state.stations = data
+      const r = await fetch(`${base}/json/stations/search?limit=200&order=clickcount&reverse=true&hidebroken=true&has_https_failover=true`, { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) continue;
+      const data = await r.json();
+      S.stations = data
         .filter(s => s.url_resolved || s.url)
         .map((s, i) => ({
-          name: s.name || 'Unknown Station',
+          name: s.name || 'Unknown',
           url: s.url_resolved || s.url,
           country: s.country || '',
-          tags: s.tags || '',
           codec: s.codec || '',
           bitrate: s.bitrate || '',
-          index: i,
+          idx: i,
         }))
         .sort(() => Math.random() - 0.5);
-
-      state.loading = false;
-      statusBar.textContent = `${state.stations.length} signals found • scroll or drag to tune • space to power`;
+      S.loading = false;
+      statusBar.textContent = `${S.stations.length} signals found · scroll or drag to tune`;
       drawDial();
       return;
-    } catch (e) {
-      continue;
-    }
+    } catch {}
   }
   statusBar.textContent = 'signal lost — refresh to rescan';
 }
 
-// ─── Audio engine ───────────────────────────────────────────────
-function initAudio() {
-  if (state.audioCtx) return;
-  state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-}
-
-function createProcessingChain() {
-  const ctx = state.audioCtx;
-  const n = state.nodes;
-
-  n.masterGain = ctx.createGain();
-  n.masterGain.gain.value = 0;
-  n.inputGain = ctx.createGain();
-  n.inputGain.gain.value = 0.8;
-
-  n.bpFilter = ctx.createBiquadFilter();
-  n.bpFilter.type = 'bandpass';
-  n.bpFilter.frequency.value = 1000;
-  n.bpFilter.Q.value = 0.5;
-
-  n.lowCut = ctx.createBiquadFilter();
-  n.lowCut.type = 'highpass';
-  n.lowCut.frequency.value = 80;
-
-  n.delay = ctx.createDelay(1.0);
-  n.delay.delayTime.value = 0.1;
-  n.delayFeedback = ctx.createGain();
-  n.delayFeedback.gain.value = 0.15;
-  n.delayWet = ctx.createGain();
-  n.delayWet.gain.value = 0.4;
-  n.dry = ctx.createGain();
-  n.dry.gain.value = 0.7;
-
-  n.waveshaper = ctx.createWaveShaper();
-  n.waveshaper.curve = makeSaturationCurve(50);
-  n.waveshaper.oversample = '4x';
-
-  n.postGain = ctx.createGain();
-  n.postGain.gain.value = 0.9;
-
-  n.convolver = ctx.createConvolver();
-  n.convolver.buffer = createReverbImpulse(ctx, 3.5, 2.5);
-
-  n.reverbWet = ctx.createGain();
-  n.reverbWet.gain.value = 0.5;
-  n.reverbDry = ctx.createGain();
-  n.reverbDry.gain.value = 0.7;
-
-  n.staticGain = ctx.createGain();
-  n.staticGain.gain.value = 0.08;
-  n.staticSource = createStaticNoise(ctx);
-  n.staticSource.connect(n.staticGain);
-  n.staticGain.connect(n.masterGain);
-
-  n.bpLfo = ctx.createOscillator();
-  n.bpLfo.type = 'sine';
-  n.bpLfo.frequency.value = 0.08;
-  n.bpLfoGain = ctx.createGain();
-  n.bpLfoGain.gain.value = 200;
-  n.bpLfo.connect(n.bpLfoGain);
-  n.bpLfoGain.connect(n.bpFilter.frequency);
-  n.bpLfo.start();
-
-  n.wobbleLfo = ctx.createOscillator();
-  n.wobbleLfo.type = 'sine';
-  n.wobbleLfo.frequency.value = 0.3;
-  n.wobbleLfoGain = ctx.createGain();
-  n.wobbleLfoGain.gain.value = 0.002;
-  n.wobbleLfo.connect(n.wobbleLfoGain);
-  n.wobbleLfoGain.connect(n.delay.delayTime);
-  n.wobbleLfo.start();
-
-  n.flutterLfo = ctx.createOscillator();
-  n.flutterLfo.type = 'sawtooth';
-  n.flutterLfo.frequency.value = 4.5;
-  n.flutterLfoGain = ctx.createGain();
-  n.flutterLfoGain.gain.value = 0.0005;
-  n.flutterLfo.connect(n.flutterLfoGain);
-  n.flutterLfoGain.connect(n.delay.delayTime);
-  n.flutterLfo.start();
-
-  n.inputGain.connect(n.lowCut);
-  n.lowCut.connect(n.bpFilter);
-  n.bpFilter.connect(n.dry);
-  n.bpFilter.connect(n.delay);
-  n.delay.connect(n.delayFeedback);
-  n.delayFeedback.connect(n.delay);
-  n.delay.connect(n.delayWet);
-  n.dry.connect(n.waveshaper);
-  n.delayWet.connect(n.waveshaper);
-  n.waveshaper.connect(n.postGain);
-  n.postGain.connect(n.convolver);
-  n.postGain.connect(n.reverbDry);
-  n.convolver.connect(n.reverbWet);
-  n.reverbWet.connect(n.masterGain);
-  n.reverbDry.connect(n.masterGain);
-  n.masterGain.connect(ctx.destination);
-}
-
-function makeSaturationCurve(amount) {
-  const samples = 44100;
-  const curve = new Float32Array(samples);
+// ─── Audio helpers ──────────────────────────────────────────────
+function satCurve(amount) {
+  const n = 44100, curve = new Float32Array(n);
   const k = amount / 100;
-  for (let i = 0; i < samples; i++) {
-    const x = (i * 2) / samples - 1;
+  for (let i = 0; i < n; i++) {
+    const x = (i * 2) / n - 1;
     curve[i] = ((Math.PI + k) * x) / (Math.PI + k * Math.abs(x));
   }
   return curve;
 }
 
-function createReverbImpulse(ctx, duration, decay) {
-  const length = ctx.sampleRate * duration;
-  const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
+function reverbIR(ctx, dur, decay) {
+  const len = ctx.sampleRate * dur;
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate);
   for (let ch = 0; ch < 2; ch++) {
-    const data = impulse.getChannelData(ch);
-    for (let i = 0; i < length; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
-    }
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
   }
-  return impulse;
+  return buf;
 }
 
-function createStaticNoise(ctx) {
+function noiseBuffer(ctx) {
   const buf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-  const src = ctx.createBufferSource();
-  src.buffer = buf;
-  src.loop = true;
-  src.start();
-  return src;
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  return buf;
 }
 
-// ─── Stream loading with CORS proxy fallback ────────────────────
-let currentAudioEl = null;
-let currentSourceNode = null;
-let loadGeneration = 0; // bump to invalidate stale async loads
+// ─── Build audio chain (once) ───────────────────────────────────
+function initAudio() {
+  if (S.ctx) return;
+  S.ctx = new (window.AudioContext || window.webkitAudioContext)();
 
-function killStream() {
-  if (currentAudioEl) { currentAudioEl.pause(); currentAudioEl.src = ''; currentAudioEl.remove(); currentAudioEl = null; }
-  if (currentSourceNode) { try { currentSourceNode.disconnect(); } catch {} currentSourceNode = null; }
-  state.currentStation = null;
+  const ctx = S.ctx;
+  const n = S.chain;
+
+  // source entry point
+  n.inputGain = ctx.createGain();
+  n.inputGain.gain.value = 0.9;
+
+  // tone shaping
+  n.hiPass = ctx.createBiquadFilter();
+  n.hiPass.type = 'highpass';
+  n.hiPass.frequency.value = 100;
+
+  n.bpFilter = ctx.createBiquadFilter();
+  n.bpFilter.type = 'bandpass';
+  n.bpFilter.frequency.value = 800;
+  n.bpFilter.Q.value = 2.0; // audible resonance
+
+  // delay line (tape wobble)
+  n.delay = ctx.createDelay(1.0);
+  n.delay.delayTime.value = 0.08;
+  n.delayFb = ctx.createGain();
+  n.delayFb.gain.value = 0.3;
+  n.delayWet = ctx.createGain();
+  n.delayWet.gain.value = 0.5;
+  n.dry = ctx.createGain();
+  n.dry.gain.value = 0.6;
+
+  // saturation
+  n.waveshaper = ctx.createWaveShaper();
+  n.waveshaper.curve = satCurve(80);
+  n.waveshaper.oversample = '4x';
+
+  n.postGain = ctx.createGain();
+  n.postGain.gain.value = 0.7;
+
+  // reverb
+  n.convolver = ctx.createConvolver();
+  n.convolver.buffer = reverbIR(ctx, 4.0, 2.0);
+  n.reverbWet = ctx.createGain();
+  n.reverbWet.gain.value = 0.6;
+  n.reverbDry = ctx.createGain();
+  n.reverbDry.gain.value = 0.5;
+
+  // master
+  n.masterGain = ctx.createGain();
+  n.masterGain.gain.value = 0;
+
+  // static noise
+  n.staticGain = ctx.createGain();
+  n.staticGain.gain.value = 0.1;
+  const noiseSrc = ctx.createBufferSource();
+  noiseSrc.buffer = noiseBuffer(ctx);
+  noiseSrc.loop = true;
+  noiseSrc.connect(n.staticGain);
+  n.staticGain.connect(n.masterGain);
+  noiseSrc.start();
+
+  // LFO: bandpass sweep (drifting dial)
+  n.bpLfo = ctx.createOscillator();
+  n.bpLfo.type = 'sine';
+  n.bpLfo.frequency.value = 0.06;
+  n.bpLfoGain = ctx.createGain();
+  n.bpLfoGain.gain.value = 300;
+  n.bpLfo.connect(n.bpLfoGain);
+  n.bpLfoGain.connect(n.bpFilter.frequency);
+  n.bpLfo.start();
+
+  // LFO: delay time wobble (tape wow)
+  n.wowLfo = ctx.createOscillator();
+  n.wowLfo.type = 'sine';
+  n.wowLfo.frequency.value = 0.4;
+  n.wowLfoGain = ctx.createGain();
+  n.wowLfoGain.gain.value = 0.003;
+  n.wowLfo.connect(n.wowLfoGain);
+  n.wowLfoGain.connect(n.delay.delayTime);
+  n.wowLfo.start();
+
+  // LFO: delay time flutter (tape flutter)
+  n.flutterLfo = ctx.createOscillator();
+  n.flutterLfo.type = 'sawtooth';
+  n.flutterLfo.frequency.value = 5.0;
+  n.flutterLfoGain = ctx.createGain();
+  n.flutterLfoGain.gain.value = 0.0008;
+  n.flutterLfo.connect(n.flutterLfoGain);
+  n.flutterLfoGain.connect(n.delay.delayTime);
+  n.flutterLfo.start();
+
+  // wire: input → hiPass → bandpass → [dry + delay] → waveshaper → [reverb dry/wet] → master
+  n.inputGain.connect(n.hiPass);
+  n.hiPass.connect(n.bpFilter);
+
+  // dry path
+  n.bpFilter.connect(n.dry);
+
+  // delay path
+  n.bpFilter.connect(n.delay);
+  n.delay.connect(n.delayFb);
+  n.delayFb.connect(n.delay); // feedback loop
+  n.delay.connect(n.delayWet);
+
+  // merge → saturation
+  n.dry.connect(n.waveshaper);
+  n.delayWet.connect(n.waveshaper);
+
+  // saturation → reverb split
+  n.waveshaper.connect(n.postGain);
+  n.postGain.connect(n.convolver);
+  n.postGain.connect(n.reverbDry);
+
+  // reverb merge → master
+  n.convolver.connect(n.reverbWet);
+  n.reverbWet.connect(n.masterGain);
+  n.reverbDry.connect(n.masterGain);
+  n.masterGain.connect(ctx.destination);
+
+  // create the single persistent source node slot
+  // (we'll attach audio elements to it)
 }
 
+// ─── Kill everything ────────────────────────────────────────────
+function killAll() {
+  S.loadId++; // invalidate all in-flight loads
+  if (S.audioEl) {
+    S.audioEl.pause();
+    S.audioEl.src = '';
+    S.audioEl.removeAttribute('src');
+    S.audioEl.remove();
+    S.audioEl = null;
+  }
+  if (S.sourceNode) {
+    try { S.sourceNode.disconnect(); } catch {}
+    S.sourceNode = null;
+  }
+}
+
+// ─── Load a station ─────────────────────────────────────────────
 async function loadStation(station) {
-  const myGen = ++loadGeneration; // this load's generation tag
-  killStream(); // kill previous immediately
+  const myId = ++S.loadId;
+  killAll();
 
-  state.currentStation = station;
-  updateStationDisplay(station);
+  // update display
+  stationName.style.opacity = '0';
+  setTimeout(() => {
+    if (myId !== S.loadId) return;
+    stationName.textContent = station.name;
+    stationName.style.opacity = '1';
+    const parts = [];
+    if (station.country) parts.push(station.country);
+    if (station.codec) parts.push(station.codec);
+    if (station.bitrate) parts.push(station.bitrate + 'kbps');
+    stationMeta.textContent = parts.join(' · ');
+  }, 120);
 
-  // Try direct first (fast path)
+  // try via CORS proxy so Web Audio can process it
+  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(station.url)}`;
+
+  // first try: via proxy (for processing)
   try {
-    const res = await fetch(station.url, { mode: 'cors', signal: AbortSignal.timeout(3000) });
-    if (res.ok && myGen === loadGeneration) {
-      const audio = new Audio();
-      audio.crossOrigin = 'anonymous';
-      audio.preload = 'none';
-      audio.src = station.url;
-      currentAudioEl = audio;
-      if (state.audioCtx && state.nodes.inputGain) {
-        currentSourceNode = state.audioCtx.createMediaElementSource(audio);
-        currentSourceNode.connect(state.nodes.inputGain);
-      }
-      audio.play().catch(() => {});
-      return;
-    }
+    const audio = new Audio();
+    audio.crossOrigin = 'anonymous';
+    audio.preload = 'none';
+    audio.src = proxyUrl;
+
+    // wait for it to start loading or fail
+    await new Promise((resolve, reject) => {
+      audio.addEventListener('canplay', resolve, { once: true });
+      audio.addEventListener('loadeddata', resolve, { once: true });
+      audio.addEventListener('error', reject, { once: true });
+      setTimeout(reject, 6000);
+      audio.load();
+    });
+
+    if (myId !== S.loadId) { audio.pause(); audio.src = ''; audio.remove(); return; }
+
+    // success — connect to processing chain
+    S.audioEl = audio;
+    S.sourceNode = S.ctx.createMediaElementSource(audio);
+    S.sourceNode.connect(S.chain.inputGain);
+    audio.play().catch(() => {});
+    statusBar.textContent = 'broadcasting · processing active';
+    return;
   } catch {}
 
-  // Stale — another load started since we began
-  if (myGen !== loadGeneration) return;
+  if (myId !== S.loadId) return;
 
-  // Try CORS proxies
-  for (const makeProxyUrl of CORS_PROXIES) {
-    try {
-      const proxyUrl = makeProxyUrl(station.url);
-      const res = await fetch(proxyUrl, { mode: 'cors', signal: AbortSignal.timeout(5000) });
-      if (res.ok && myGen === loadGeneration) {
-        const audio = new Audio();
-        audio.crossOrigin = 'anonymous';
-        audio.preload = 'none';
-        audio.src = proxyUrl;
-        currentAudioEl = audio;
-        if (state.audioCtx && state.nodes.inputGain) {
-          currentSourceNode = state.audioCtx.createMediaElementSource(audio);
-          currentSourceNode.connect(state.nodes.inputGain);
-        }
-        audio.play().catch(() => {});
-        return;
-      }
-    } catch {}
-    if (myGen !== loadGeneration) return;
-  }
-
-  // Last resort: raw playback, no processing
-  if (myGen !== loadGeneration) return;
+  // fallback: direct playback (no processing, but it plays)
   const audio = new Audio();
   audio.preload = 'none';
   audio.src = station.url;
-  currentAudioEl = audio;
+
+  await new Promise((resolve, reject) => {
+    audio.addEventListener('canplay', resolve, { once: true });
+    audio.addEventListener('loadeddata', resolve, { once: true });
+    audio.addEventListener('error', reject, { once: true });
+    setTimeout(reject, 6000);
+    audio.load();
+  }).catch(() => {});
+
+  if (myId !== S.loadId) { audio.pause(); audio.src = ''; audio.remove(); return; }
+
+  S.audioEl = audio;
   audio.play().catch(() => {});
-  statusBar.textContent = 'raw signal — processing unavailable';
+  statusBar.textContent = 'raw signal · no processing (CORS blocked)';
 }
 
-// ─── FX updates ─────────────────────────────────────────────────
+// ─── FX ─────────────────────────────────────────────────────────
 function updateFX() {
-  const n = state.nodes;
+  const n = S.chain;
   if (!n.delay) return;
-  const d = sliders.decay.value / 100;
-  const w = sliders.wobble.value / 100;
-  const s = sliders.saturation.value / 100;
-  const r = sliders.reverb.value / 100;
-  const st = sliders.static.value / 100;
-  const t = state.audioCtx.currentTime;
+  const t = S.ctx.currentTime;
+  const v = k => sliders[k].el.value / 100;
 
-  n.delayFeedback.gain.setTargetAtTime(d * 0.4, t, 0.1);
-  n.delayWet.gain.setTargetAtTime(0.2 + d * 0.6, t, 0.1);
-  n.wobbleLfoGain.gain.setTargetAtTime(w * 0.004, t, 0.1);
-  n.flutterLfoGain.gain.setTargetAtTime(w * 0.001, t, 0.1);
-  n.waveshaper.curve = makeSaturationCurve(10 + s * 200);
-  n.reverbWet.gain.setTargetAtTime(r * 0.7, t, 0.1);
-  n.reverbDry.gain.setTargetAtTime(1 - r * 0.3, t, 0.1);
-  n.staticGain.gain.setTargetAtTime(st * 0.15, t, 0.1);
+  // decay: delay feedback + wet mix
+  n.delayFb.gain.setTargetAtTime(v('decay') * 0.55, t, 0.05);
+  n.delayWet.gain.setTargetAtTime(0.15 + v('decay') * 0.7, t, 0.05);
+
+  // wobble: LFO amplitude on delay time
+  n.wowLfoGain.gain.setTargetAtTime(v('wobble') * 0.006, t, 0.05);
+  n.flutterLfoGain.gain.setTargetAtTime(v('wobble') * 0.002, t, 0.05);
+
+  // dirt: saturation curve
+  n.waveshaper.curve = satCurve(5 + v('saturation') * 300);
+
+  // void: reverb mix
+  n.reverbWet.gain.setTargetAtTime(v('reverb') * 0.8, t, 0.05);
+  n.reverbDry.gain.setTargetAtTime(1.0 - v('reverb') * 0.5, t, 0.05);
+
+  // static: noise floor
+  n.staticGain.gain.setTargetAtTime(v('static') * 0.2, t, 0.05);
 }
 
-Object.values(sliders).forEach(sl => {
-  sl.addEventListener('input', () => {
-    sl.parentElement.querySelector('.value').textContent = sl.value;
-    updateFX();
-  });
-});
-
-// ─── Dial rendering ─────────────────────────────────────────────
+// ─── Dial drawing ───────────────────────────────────────────────
 function drawDial() {
-  const w = canvas.width / window.devicePixelRatio;
-  const h = canvas.height / window.devicePixelRatio;
-  ctx.clearRect(0, 0, w, h);
+  const w = canvas.width / (window.devicePixelRatio || 1);
+  const h = canvas.height / (window.devicePixelRatio || 1);
+  c.clearRect(0, 0, w, h);
 
-  const cx = w / 2, cy = h * 0.65;
-  const r = Math.min(w * 0.4, h * 0.7);
+  const cx = w / 2, cy = h * 0.6;
+  const r = Math.min(w * 0.42, h * 0.65);
 
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, Math.PI, 0, false);
-  ctx.strokeStyle = '#2a2a1a'; ctx.lineWidth = 3; ctx.stroke();
+  // outer arc
+  c.beginPath();
+  c.arc(cx, cy, r, Math.PI, 0, false);
+  c.strokeStyle = '#3a3018';
+  c.lineWidth = 2;
+  c.stroke();
 
-  const ticks = state.stations.length > 0 ? Math.min(state.stations.length, 80) : 40;
+  // ticks
+  const ticks = S.stations.length > 0 ? Math.min(S.stations.length, 60) : 30;
   for (let i = 0; i <= ticks; i++) {
     const a = Math.PI + (i / ticks) * Math.PI;
     const major = i % 5 === 0;
-    ctx.beginPath();
-    ctx.moveTo(cx + Math.cos(a) * (r - (major ? 25 : 15)), cy + Math.sin(a) * (r - (major ? 25 : 15)));
-    ctx.lineTo(cx + Math.cos(a) * (r + 5), cy + Math.sin(a) * (r + 5));
-    ctx.strokeStyle = major ? '#5a4a2f' : '#2a2a1a';
-    ctx.lineWidth = major ? 2 : 1; ctx.stroke();
-
-    if (major && state.stations.length > 0) {
-      const si = Math.floor((i / ticks) * state.stations.length);
-      if (state.stations[si]) {
-        ctx.save(); ctx.font = '9px "JetBrains Mono"';
-        ctx.fillStyle = '#3a3a2a'; ctx.textAlign = 'center';
-        const lr = r + 18;
-        ctx.fillText(state.stations[si].country?.substring(0, 3).toUpperCase() || '',
-          cx + Math.cos(a) * lr, cy + Math.sin(a) * lr);
-        ctx.restore();
-      }
-    }
+    const inner = r - (major ? 22 : 12);
+    c.beginPath();
+    c.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
+    c.lineTo(cx + Math.cos(a) * (r + 4), cy + Math.sin(a) * (r + 4));
+    c.strokeStyle = major ? '#8a7a4a' : '#2a2210';
+    c.lineWidth = major ? 1.5 : 0.8;
+    c.stroke();
   }
 
-  const pa = Math.PI + state.dialPosition * Math.PI;
-  // glow
-  ctx.beginPath(); ctx.moveTo(cx, cy);
-  ctx.lineTo(cx + Math.cos(pa) * (r + 10), cy + Math.sin(pa) * (r + 10));
-  ctx.strokeStyle = 'rgba(196, 162, 101, 0.15)'; ctx.lineWidth = 8; ctx.stroke();
   // needle
-  ctx.beginPath(); ctx.moveTo(cx, cy);
-  ctx.lineTo(cx + Math.cos(pa) * (r - 35), cy + Math.sin(pa) * (r - 35));
-  ctx.strokeStyle = state.powered ? '#c4a265' : '#3a3a2a'; ctx.lineWidth = 2; ctx.stroke();
-  // center dot
-  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-  ctx.fillStyle = state.powered ? '#c4a265' : '#2a2a1a'; ctx.fill();
+  const pa = Math.PI + S.dialPosition * Math.PI;
+  // glow
+  c.beginPath();
+  c.moveTo(cx, cy);
+  c.lineTo(cx + Math.cos(pa) * (r + 8), cy + Math.sin(pa) * (r + 8));
+  c.strokeStyle = 'rgba(232,201,122,0.12)';
+  c.lineWidth = 8;
+  c.stroke();
+  // line
+  c.beginPath();
+  c.moveTo(cx, cy);
+  c.lineTo(cx + Math.cos(pa) * (r - 30), cy + Math.sin(pa) * (r - 30));
+  c.strokeStyle = S.powered ? '#e8c97a' : '#3a3018';
+  c.lineWidth = 2;
+  c.stroke();
+  // tip
+  c.beginPath();
+  c.arc(cx + Math.cos(pa) * (r - 30), cy + Math.sin(pa) * (r - 30), 3, 0, Math.PI * 2);
+  c.fillStyle = S.powered ? '#f0d590' : '#2a2210';
+  c.fill();
+  // center
+  c.beginPath();
+  c.arc(cx, cy, 4, 0, Math.PI * 2);
+  c.fillStyle = S.powered ? '#e8c97a' : '#1a1608';
+  c.fill();
 
-  // freq text
-  ctx.font = '11px "JetBrains Mono"'; ctx.fillStyle = '#3a3a2a'; ctx.textAlign = 'center';
-  ctx.fillText(`${(87.5 + state.dialPosition * 20.5).toFixed(1)} MHz`, cx, cy + 25);
-
-  // shimmer
-  if (state.powered && state.currentStation) {
-    const tx = cx + Math.cos(pa) * (r - 35), ty = cy + Math.sin(pa) * (r - 35);
-    for (let i = 0; i < 5; i++) {
-      ctx.beginPath();
-      ctx.arc(tx + (Math.random() - 0.5) * 10, ty + (Math.random() - 0.5) * 10, 1, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(196,162,101,${Math.random() * 0.3})`; ctx.fill();
-    }
-  }
+  // freq
+  c.font = '11px "JetBrains Mono"';
+  c.fillStyle = '#8a7a4a';
+  c.textAlign = 'center';
+  c.fillText(`${(87.5 + S.dialPosition * 20.5).toFixed(1)} MHz`, cx, cy + 22);
 }
 
 // ─── Dial interaction ───────────────────────────────────────────
-function handleDial(clientX) {
+function dialTo(clientX) {
   const rect = canvas.getBoundingClientRect();
-  state.dialPosition = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-  if (state.powered && state.stations.length > 0) {
-    const idx = Math.floor(state.dialPosition * (state.stations.length - 1));
-    if (idx !== state.stationIndex) { state.stationIndex = idx; loadStation(state.stations[idx]); }
+  S.dialPosition = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  if (S.powered && S.stations.length > 0) {
+    const idx = Math.floor(S.dialPosition * (S.stations.length - 1));
+    if (idx !== S.stationIndex) {
+      S.stationIndex = idx;
+      loadStation(S.stations[idx]);
+    }
   }
   drawDial();
 }
 
-canvas.addEventListener('mousedown', e => { state.dragging = true; handleDial(e.clientX); });
-window.addEventListener('mousemove', e => { if (state.dragging) handleDial(e.clientX); });
-window.addEventListener('mouseup', () => { state.dragging = false; });
-canvas.addEventListener('touchstart', e => { state.dragging = true; handleDial(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
-window.addEventListener('touchmove', e => { if (state.dragging) handleDial(e.touches[0].clientX); }, { passive: false });
-window.addEventListener('touchend', () => { state.dragging = false; });
+canvas.addEventListener('pointerdown', e => {
+  S.dragging = true;
+  canvas.setPointerCapture(e.pointerId);
+  dialTo(e.clientX);
+});
+canvas.addEventListener('pointermove', e => {
+  if (S.dragging) dialTo(e.clientX);
+});
+canvas.addEventListener('pointerup', e => {
+  S.dragging = false;
+  canvas.releasePointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointercancel', () => { S.dragging = false; });
 
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
-  state.dialPosition = Math.max(0, Math.min(1, state.dialPosition + (e.deltaY > 0 ? 0.008 : -0.008)));
-  if (state.powered && state.stations.length > 0) {
-    const idx = Math.floor(state.dialPosition * (state.stations.length - 1));
-    if (idx !== state.stationIndex) { state.stationIndex = idx; loadStation(state.stations[idx]); }
+  S.dialPosition = Math.max(0, Math.min(1, S.dialPosition + (e.deltaY > 0 ? 0.01 : -0.01)));
+  if (S.powered && S.stations.length > 0) {
+    const idx = Math.floor(S.dialPosition * (S.stations.length - 1));
+    if (idx !== S.stationIndex) {
+      S.stationIndex = idx;
+      loadStation(S.stations[idx]);
+    }
   }
   drawDial();
 }, { passive: false });
 
 // ─── Power ──────────────────────────────────────────────────────
 powerBtn.addEventListener('click', togglePower);
-document.addEventListener('keydown', e => {
-  if (e.code === 'Space') { e.preventDefault(); togglePower(); }
-  if (!state.powered) return;
-  if (e.code === 'ArrowRight' || e.code === 'ArrowDown') {
-    state.dialPosition = Math.min(1, state.dialPosition + 0.01);
-    const idx = Math.floor(state.dialPosition * (state.stations.length - 1));
-    if (idx !== state.stationIndex) { state.stationIndex = idx; loadStation(state.stations[idx]); }
-    drawDial();
-  }
-  if (e.code === 'ArrowLeft' || e.code === 'ArrowUp') {
-    state.dialPosition = Math.max(0, state.dialPosition - 0.01);
-    const idx = Math.floor(state.dialPosition * (state.stations.length - 1));
-    if (idx !== state.stationIndex) { state.stationIndex = idx; loadStation(state.stations[idx]); }
-    drawDial();
-  }
-});
 
-async function togglePower() {
-  if (state.loading) return;
-  state.powered = !state.powered;
-  powerBtn.classList.toggle('on', state.powered);
-  powerBtn.textContent = state.powered ? 'broadcasting' : 'tune in';
+function togglePower() {
+  if (S.loading) return;
+  S.powered = !S.powered;
+  powerBtn.classList.toggle('on', S.powered);
+  powerBtn.textContent = S.powered ? 'broadcasting' : 'tune in';
 
-  if (state.powered) {
+  if (S.powered) {
     initAudio();
-    createProcessingChain();
     updateFX();
-    state.nodes.masterGain.gain.setTargetAtTime(0.7, state.audioCtx.currentTime, 0.5);
-    if (state.stations.length > 0) {
-      const idx = Math.floor(state.dialPosition * (state.stations.length - 1));
-      state.stationIndex = idx;
-      loadStation(state.stations[idx]);
+    S.chain.masterGain.gain.setTargetAtTime(0.8, S.ctx.currentTime, 0.5);
+    if (S.stations.length > 0) {
+      S.stationIndex = Math.floor(S.dialPosition * (S.stations.length - 1));
+      loadStation(S.stations[S.stationIndex]);
     }
-    statusBar.textContent = 'broadcasting • scroll or drag to tune';
+    statusBar.textContent = 'broadcasting · scroll or drag to tune';
   } else {
-    if (state.nodes.masterGain) state.nodes.masterGain.gain.setTargetAtTime(0, state.audioCtx.currentTime, 0.3);
-    killStream();
-    updateStationDisplay(null);
-    statusBar.textContent = 'off air • space to power';
+    killAll();
+    if (S.chain.masterGain) S.chain.masterGain.gain.setTargetAtTime(0, S.ctx.currentTime, 0.3);
+    stationName.innerHTML = '<span class="station-unknown">— silence —</span>';
+    stationMeta.textContent = '';
+    statusBar.textContent = 'off air';
   }
   drawDial();
 }
 
-function updateStationDisplay(station) {
-  if (!station) { stationName.innerHTML = '<span class="station-unknown">— silence —</span>'; stationMeta.textContent = ''; return; }
-  stationName.style.opacity = '0';
-  setTimeout(() => {
-    stationName.textContent = station.name;
-    stationName.style.opacity = '1';
-    const parts = [];
-    if (station.country) parts.push(station.country);
-    if (station.codec) parts.push(station.codec);
-    if (station.bitrate) parts.push(`${station.bitrate}kbps`);
-    stationMeta.textContent = parts.join(' • ');
-  }, 150);
-}
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); togglePower(); return; }
+  if (!S.powered) return;
+  const step = 0.012;
+  if (e.code === 'ArrowRight' || e.code === 'ArrowDown') {
+    S.dialPosition = Math.min(1, S.dialPosition + step);
+  } else if (e.code === 'ArrowLeft' || e.code === 'ArrowUp') {
+    S.dialPosition = Math.max(0, S.dialPosition - step);
+  } else return;
+  const idx = Math.floor(S.dialPosition * (S.stations.length - 1));
+  if (idx !== S.stationIndex) { S.stationIndex = idx; loadStation(S.stations[idx]); }
+  drawDial();
+});
 
-// ─── Animation ──────────────────────────────────────────────────
-function animate() {
-  requestAnimationFrame(animate);
-  if (state.powered && !state.dragging && Math.random() < 0.01) {
-    state.dialPosition = Math.max(0, Math.min(1, state.dialPosition + (Math.random() - 0.5) * 0.001));
+// ─── Loop ───────────────────────────────────────────────────────
+function loop() {
+  requestAnimationFrame(loop);
+  if (S.powered) {
+    if (!S.dragging && Math.random() < 0.008) {
+      S.dialPosition = Math.max(0, Math.min(1, S.dialPosition + (Math.random() - 0.5) * 0.0008));
+    }
     drawDial();
   }
-  if (state.powered) drawDial();
 }
 
+// ─── Init ───────────────────────────────────────────────────────
 loadStations();
 drawDial();
-animate();
+loop();
 </script>
 </body>
 </html>
