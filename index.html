@@ -537,65 +537,72 @@ function createStaticNoise(ctx) {
 // ─── Stream loading with CORS proxy fallback ────────────────────
 let currentAudioEl = null;
 let currentSourceNode = null;
-
-async function tryFetchStream(url) {
-  // try direct first
-  try {
-    const res = await fetch(url, { mode: 'cors', signal: AbortSignal.timeout(3000) });
-    if (res.ok) return url;
-  } catch {}
-
-  // try CORS proxies
-  for (const makeProxyUrl of CORS_PROXIES) {
-    try {
-      const proxyUrl = makeProxyUrl(url);
-      const res = await fetch(proxyUrl, { mode: 'cors', signal: AbortSignal.timeout(5000) });
-      if (res.ok) return proxyUrl;
-    } catch {}
-  }
-  return null;
-}
-
-async function loadStation(station) {
-  const ctx = state.audioCtx;
-
-  // Kill old stream
-  if (currentAudioEl) { currentAudioEl.pause(); currentAudioEl.src = ''; currentAudioEl.remove(); }
-  if (currentSourceNode) { try { currentSourceNode.disconnect(); } catch {} }
-
-  state.currentStation = station;
-  updateStationDisplay(station);
-
-  // Try to get a CORS-accessible URL for processing
-  const processedUrl = await tryFetchStream(station.url);
-
-  if (processedUrl && state.useProcessing) {
-    // Full processing chain
-    const audio = new Audio();
-    audio.crossOrigin = 'anonymous';
-    audio.preload = 'none';
-    audio.src = processedUrl;
-    currentAudioEl = audio;
-    currentSourceNode = ctx.createMediaElementSource(audio);
-    currentSourceNode.connect(state.nodes.inputGain);
-    audio.play().catch(() => {});
-  } else {
-    // Fallback: plain audio without processing
-    state.useProcessing = false;
-    const audio = new Audio();
-    audio.crossOrigin = 'anonymous';
-    audio.preload = 'none';
-    audio.src = station.url;
-    currentAudioEl = audio;
-    audio.play().catch(() => {});
-    statusBar.textContent = 'raw signal — processing unavailable for this stream';
-  }
-}
+let loadGeneration = 0; // bump to invalidate stale async loads
 
 function killStream() {
   if (currentAudioEl) { currentAudioEl.pause(); currentAudioEl.src = ''; currentAudioEl.remove(); currentAudioEl = null; }
   if (currentSourceNode) { try { currentSourceNode.disconnect(); } catch {} currentSourceNode = null; }
   state.currentStation = null;
+}
+
+async function loadStation(station) {
+  const myGen = ++loadGeneration; // this load's generation tag
+  killStream(); // kill previous immediately
+
+  state.currentStation = station;
+  updateStationDisplay(station);
+
+  // Try direct first (fast path)
+  try {
+    const res = await fetch(station.url, { mode: 'cors', signal: AbortSignal.timeout(3000) });
+    if (res.ok && myGen === loadGeneration) {
+      const audio = new Audio();
+      audio.crossOrigin = 'anonymous';
+      audio.preload = 'none';
+      audio.src = station.url;
+      currentAudioEl = audio;
+      if (state.audioCtx && state.nodes.inputGain) {
+        currentSourceNode = state.audioCtx.createMediaElementSource(audio);
+        currentSourceNode.connect(state.nodes.inputGain);
+      }
+      audio.play().catch(() => {});
+      return;
+    }
+  } catch {}
+
+  // Stale — another load started since we began
+  if (myGen !== loadGeneration) return;
+
+  // Try CORS proxies
+  for (const makeProxyUrl of CORS_PROXIES) {
+    try {
+      const proxyUrl = makeProxyUrl(station.url);
+      const res = await fetch(proxyUrl, { mode: 'cors', signal: AbortSignal.timeout(5000) });
+      if (res.ok && myGen === loadGeneration) {
+        const audio = new Audio();
+        audio.crossOrigin = 'anonymous';
+        audio.preload = 'none';
+        audio.src = proxyUrl;
+        currentAudioEl = audio;
+        if (state.audioCtx && state.nodes.inputGain) {
+          currentSourceNode = state.audioCtx.createMediaElementSource(audio);
+          currentSourceNode.connect(state.nodes.inputGain);
+        }
+        audio.play().catch(() => {});
+        return;
+      }
+    } catch {}
+    if (myGen !== loadGeneration) return;
+  }
+
+  // Last resort: raw playback, no processing
+  if (myGen !== loadGeneration) return;
+  const audio = new Audio();
+  audio.preload = 'none';
+  audio.src = station.url;
+  currentAudioEl = audio;
+  audio.play().catch(() => {});
+  statusBar.textContent = 'raw signal — processing unavailable';
 }
 
 // ─── FX updates ─────────────────────────────────────────────────
