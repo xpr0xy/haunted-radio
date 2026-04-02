@@ -66,7 +66,6 @@
     z-index: 10;
   }
 
-  /* Header */
   .header {
     text-align: center;
     margin-bottom: 30px;
@@ -90,7 +89,6 @@
     letter-spacing: 4px;
   }
 
-  /* Dial area */
   .dial-container {
     position: relative;
     width: 100%;
@@ -106,7 +104,6 @@
 
   #dialCanvas:active { cursor: grabbing; }
 
-  /* Station info */
   .station-display {
     text-align: center;
     margin: 20px 0;
@@ -133,7 +130,6 @@
     font-style: italic;
   }
 
-  /* Processing indicators */
   .fx-panel {
     display: flex;
     justify-content: center;
@@ -186,7 +182,6 @@
     box-shadow: 0 0 10px rgba(196, 162, 101, 0.4);
   }
 
-  /* Power button */
   .power-section {
     text-align: center;
     margin-top: 30px;
@@ -225,19 +220,6 @@
     50% { box-shadow: 0 0 60px rgba(196, 162, 101, 0.25); }
   }
 
-  /* Loading state */
-  .loading-text {
-    font-size: 0.8em;
-    color: #3a3a2a;
-    animation: blink 1.5s ease-in-out infinite;
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 1; }
-  }
-
-  /* Status bar */
   .status-bar {
     position: fixed;
     bottom: 20px;
@@ -250,7 +232,6 @@
     z-index: 10;
   }
 
-  /* Responsive */
   @media (max-width: 600px) {
     .header h1 { font-size: 1.8em; letter-spacing: 4px; }
     .fx-knob input[type="range"] { width: 60px; }
@@ -320,20 +301,24 @@
 <div class="status-bar" id="statusBar">scroll or drag to tune • space to power</div>
 
 <script>
+// ─── CORS proxy for audio streams ──────────────────────────────
+const CORS_PROXIES = [
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+];
+
 // ─── State ──────────────────────────────────────────────────────
 const state = {
   powered: false,
   stations: [],
   currentStation: null,
   stationIndex: 0,
-  dialPosition: 0,      // 0-1 normalized
-  targetPosition: 0,
+  dialPosition: 0,
   audioCtx: null,
   nodes: {},
   loading: true,
   dragging: false,
-  dragStartX: 0,
-  dragStartPos: 0,
+  useProcessing: true,
 };
 
 // ─── DOM refs ───────────────────────────────────────────────────
@@ -344,7 +329,6 @@ const stationName = document.getElementById('stationName');
 const stationMeta = document.getElementById('stationMeta');
 const statusBar = document.getElementById('statusBar');
 
-// FX sliders
 const sliders = {
   decay: document.getElementById('decaySlider'),
   wobble: document.getElementById('wobbleSlider'),
@@ -378,34 +362,43 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-// ─── Fetch stations ─────────────────────────────────────────────
+// ─── Fetch stations (direct from radio-browser.info) ────────────
 async function loadStations() {
   statusBar.textContent = 'scanning frequencies...';
-  try {
-    const res = await fetch('/api/stations');
-    const data = await res.json();
-    // Filter for streams we can actually proxy (HTTP only for proxy)
-    state.stations = data
-      .filter(s => s.url_resolved || s.url)
-      .map((s, i) => ({
-        name: s.name || 'Unknown Station',
-        url: s.url_resolved || s.url,
-        country: s.country || '',
-        tags: s.tags || '',
-        codec: s.codec || '',
-        bitrate: s.bitrate || '',
-        index: i,
-      }))
-      // Shuffle for variety
-      .sort(() => Math.random() - 0.5);
+  const apiUrls = [
+    'https://de1.api.radio-browser.info',
+    'https://nl1.api.radio-browser.info',
+    'https://at1.api.radio-browser.info',
+  ];
 
-    state.loading = false;
-    statusBar.textContent = `${state.stations.length} signals found • scroll or drag to tune • space to power`;
-    drawDial();
-  } catch (e) {
-    console.error('Failed to load stations:', e);
-    statusBar.textContent = 'signal lost — refresh to rescan';
+  for (const base of apiUrls) {
+    try {
+      const url = `${base}/json/stations/search?limit=200&order=clickcount&reverse=true&hidebroken=true&has_https_failover=true`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) continue;
+      const data = await res.json();
+      state.stations = data
+        .filter(s => s.url_resolved || s.url)
+        .map((s, i) => ({
+          name: s.name || 'Unknown Station',
+          url: s.url_resolved || s.url,
+          country: s.country || '',
+          tags: s.tags || '',
+          codec: s.codec || '',
+          bitrate: s.bitrate || '',
+          index: i,
+        }))
+        .sort(() => Math.random() - 0.5);
+
+      state.loading = false;
+      statusBar.textContent = `${state.stations.length} signals found • scroll or drag to tune • space to power`;
+      drawDial();
+      return;
+    } catch (e) {
+      continue;
+    }
   }
+  statusBar.textContent = 'signal lost — refresh to rescan';
 }
 
 // ─── Audio engine ───────────────────────────────────────────────
@@ -418,68 +411,50 @@ function createProcessingChain() {
   const ctx = state.audioCtx;
   const n = state.nodes;
 
-  // Master gain
   n.masterGain = ctx.createGain();
   n.masterGain.gain.value = 0;
-
-  // Input gain
   n.inputGain = ctx.createGain();
   n.inputGain.gain.value = 0.8;
 
-  // Bandpass filter — the core "tuning" sound
   n.bpFilter = ctx.createBiquadFilter();
   n.bpFilter.type = 'bandpass';
   n.bpFilter.frequency.value = 1000;
   n.bpFilter.Q.value = 0.5;
 
-  // Low shelf to cut mud
   n.lowCut = ctx.createBiquadFilter();
   n.lowCut.type = 'highpass';
   n.lowCut.frequency.value = 80;
 
-  // Delay for pitch wobble (tape wow/flutter)
   n.delay = ctx.createDelay(1.0);
   n.delay.delayTime.value = 0.1;
-
-  // Feedback for delay repeats (ghostly trails)
   n.delayFeedback = ctx.createGain();
   n.delayFeedback.gain.value = 0.15;
-
-  // Delay wet gain
   n.delayWet = ctx.createGain();
   n.delayWet.gain.value = 0.4;
-
-  // Dry signal
   n.dry = ctx.createGain();
   n.dry.gain.value = 0.7;
 
-  // Waveshaper for tape saturation
   n.waveshaper = ctx.createWaveShaper();
   n.waveshaper.curve = makeSaturationCurve(50);
   n.waveshaper.oversample = '4x';
 
-  // Post-saturation gain
   n.postGain = ctx.createGain();
   n.postGain.gain.value = 0.9;
 
-  // Convolver for reverb
   n.convolver = ctx.createConvolver();
   n.convolver.buffer = createReverbImpulse(ctx, 3.5, 2.5);
 
-  // Reverb wet/dry
   n.reverbWet = ctx.createGain();
   n.reverbWet.gain.value = 0.5;
   n.reverbDry = ctx.createGain();
   n.reverbDry.gain.value = 0.7;
 
-  // Static noise
   n.staticGain = ctx.createGain();
   n.staticGain.gain.value = 0.08;
   n.staticSource = createStaticNoise(ctx);
   n.staticSource.connect(n.staticGain);
   n.staticGain.connect(n.masterGain);
 
-  // LFO for bandpass sweep (dial drift)
   n.bpLfo = ctx.createOscillator();
   n.bpLfo.type = 'sine';
   n.bpLfo.frequency.value = 0.08;
@@ -489,7 +464,6 @@ function createProcessingChain() {
   n.bpLfoGain.connect(n.bpFilter.frequency);
   n.bpLfo.start();
 
-  // LFO for delay time (pitch wobble)
   n.wobbleLfo = ctx.createOscillator();
   n.wobbleLfo.type = 'sine';
   n.wobbleLfo.frequency.value = 0.3;
@@ -499,7 +473,6 @@ function createProcessingChain() {
   n.wobbleLfoGain.connect(n.delay.delayTime);
   n.wobbleLfo.start();
 
-  // Second wobble (faster, more flutter)
   n.flutterLfo = ctx.createOscillator();
   n.flutterLfo.type = 'sawtooth';
   n.flutterLfo.frequency.value = 4.5;
@@ -509,35 +482,21 @@ function createProcessingChain() {
   n.flutterLfoGain.connect(n.delay.delayTime);
   n.flutterLfo.start();
 
-  // Connect: input → lowcut → bpFilter → [dry + delay chain] → waveshaper → [reverb dry/wet] → master
   n.inputGain.connect(n.lowCut);
   n.lowCut.connect(n.bpFilter);
-
-  // Dry path
   n.bpFilter.connect(n.dry);
-
-  // Delay path
   n.bpFilter.connect(n.delay);
   n.delay.connect(n.delayFeedback);
   n.delayFeedback.connect(n.delay);
   n.delay.connect(n.delayWet);
-
-  // Merge dry + delay → waveshaper
   n.dry.connect(n.waveshaper);
   n.delayWet.connect(n.waveshaper);
-
-  // Waveshaper → post gain → reverb split
   n.waveshaper.connect(n.postGain);
   n.postGain.connect(n.convolver);
   n.postGain.connect(n.reverbDry);
-
-  // Reverb output
   n.convolver.connect(n.reverbWet);
-
-  // Merge reverb dry/wet → master
   n.reverbWet.connect(n.masterGain);
   n.reverbDry.connect(n.masterGain);
-
   n.masterGain.connect(ctx.destination);
 }
 
@@ -558,83 +517,84 @@ function createReverbImpulse(ctx, duration, decay) {
   for (let ch = 0; ch < 2; ch++) {
     const data = impulse.getChannelData(ch);
     for (let i = 0; i < length; i++) {
-      const t = i / length;
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, decay);
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
     }
   }
   return impulse;
 }
 
 function createStaticNoise(ctx) {
-  const bufferSize = ctx.sampleRate * 2;
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) {
-    data[i] = Math.random() * 2 - 1;
-  }
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
-  source.loop = true;
-  source.start();
-  return source;
+  const buf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  src.start();
+  return src;
 }
 
-// ─── Stream management ──────────────────────────────────────────
+// ─── Stream loading with CORS proxy fallback ────────────────────
 let currentAudioEl = null;
+let currentSourceNode = null;
 
-function loadStation(station) {
+async function tryFetchStream(url) {
+  // try direct first
+  try {
+    const res = await fetch(url, { mode: 'cors', signal: AbortSignal.timeout(3000) });
+    if (res.ok) return url;
+  } catch {}
+
+  // try CORS proxies
+  for (const makeProxyUrl of CORS_PROXIES) {
+    try {
+      const proxyUrl = makeProxyUrl(url);
+      const res = await fetch(proxyUrl, { mode: 'cors', signal: AbortSignal.timeout(5000) });
+      if (res.ok) return proxyUrl;
+    } catch {}
+  }
+  return null;
+}
+
+async function loadStation(station) {
   const ctx = state.audioCtx;
-  const n = state.nodes;
 
-  // Disconnect old stream
-  if (currentAudioEl) {
-    currentAudioEl.pause();
-    currentAudioEl.src = '';
-    currentAudioEl.remove();
-  }
-
-  // Kill old source node
-  if (n.sourceNode) {
-    try { n.sourceNode.disconnect(); } catch(e) {}
-  }
+  // Kill old stream
+  if (currentAudioEl) { currentAudioEl.pause(); currentAudioEl.src = ''; currentAudioEl.remove(); }
+  if (currentSourceNode) { try { currentSourceNode.disconnect(); } catch {} }
 
   state.currentStation = station;
-
-  // Create audio element for streaming
-  const audio = new Audio();
-  audio.crossOrigin = 'anonymous';
-  audio.preload = 'none';
-
-  // Proxy through our server
-  const proxyUrl = `/stream?url=${encodeURIComponent(station.url)}`;
-  audio.src = proxyUrl;
-
-  currentAudioEl = audio;
-
-  // Create MediaElementSource
-  n.sourceNode = ctx.createMediaElementSource(audio);
-  n.sourceNode.connect(n.inputGain);
-
-  // Start playing
-  audio.play().catch(e => {
-    console.warn('Autoplay blocked:', e);
-  });
-
-  // Update UI
   updateStationDisplay(station);
+
+  // Try to get a CORS-accessible URL for processing
+  const processedUrl = await tryFetchStream(station.url);
+
+  if (processedUrl && state.useProcessing) {
+    // Full processing chain
+    const audio = new Audio();
+    audio.crossOrigin = 'anonymous';
+    audio.preload = 'none';
+    audio.src = processedUrl;
+    currentAudioEl = audio;
+    currentSourceNode = ctx.createMediaElementSource(audio);
+    currentSourceNode.connect(state.nodes.inputGain);
+    audio.play().catch(() => {});
+  } else {
+    // Fallback: plain audio without processing
+    state.useProcessing = false;
+    const audio = new Audio();
+    audio.crossOrigin = 'anonymous';
+    audio.preload = 'none';
+    audio.src = station.url;
+    currentAudioEl = audio;
+    audio.play().catch(() => {});
+    statusBar.textContent = 'raw signal — processing unavailable for this stream';
+  }
 }
 
 function killStream() {
-  if (currentAudioEl) {
-    currentAudioEl.pause();
-    currentAudioEl.src = '';
-    currentAudioEl.remove();
-    currentAudioEl = null;
-  }
-  if (state.nodes.sourceNode) {
-    try { state.nodes.sourceNode.disconnect(); } catch(e) {}
-    state.nodes.sourceNode = null;
-  }
+  if (currentAudioEl) { currentAudioEl.pause(); currentAudioEl.src = ''; currentAudioEl.remove(); currentAudioEl = null; }
+  if (currentSourceNode) { try { currentSourceNode.disconnect(); } catch {} currentSourceNode = null; }
   state.currentStation = null;
 }
 
@@ -642,37 +602,26 @@ function killStream() {
 function updateFX() {
   const n = state.nodes;
   if (!n.delay) return;
+  const d = sliders.decay.value / 100;
+  const w = sliders.wobble.value / 100;
+  const s = sliders.saturation.value / 100;
+  const r = sliders.reverb.value / 100;
+  const st = sliders.static.value / 100;
+  const t = state.audioCtx.currentTime;
 
-  const decay = sliders.decay.value / 100;
-  const wobble = sliders.wobble.value / 100;
-  const sat = sliders.saturation.value / 100;
-  const reverb = sliders.reverb.value / 100;
-  const staticLevel = sliders.static.value / 100;
-
-  // Decay = delay feedback + delay wet mix
-  n.delayFeedback.gain.setTargetAtTime(decay * 0.4, state.audioCtx.currentTime, 0.1);
-  n.delayWet.gain.setTargetAtTime(0.2 + decay * 0.6, state.audioCtx.currentTime, 0.1);
-
-  // Wobble = LFO amplitude on delay time
-  n.wobbleLfoGain.gain.setTargetAtTime(wobble * 0.004, state.audioCtx.currentTime, 0.1);
-  n.flutterLfoGain.gain.setTargetAtTime(wobble * 0.001, state.audioCtx.currentTime, 0.1);
-
-  // Saturation
-  n.waveshaper.curve = makeSaturationCurve(10 + sat * 200);
-
-  // Reverb mix
-  n.reverbWet.gain.setTargetAtTime(reverb * 0.7, state.audioCtx.currentTime, 0.1);
-  n.reverbDry.gain.setTargetAtTime(1 - reverb * 0.3, state.audioCtx.currentTime, 0.1);
-
-  // Static noise
-  n.staticGain.gain.setTargetAtTime(staticLevel * 0.15, state.audioCtx.currentTime, 0.1);
+  n.delayFeedback.gain.setTargetAtTime(d * 0.4, t, 0.1);
+  n.delayWet.gain.setTargetAtTime(0.2 + d * 0.6, t, 0.1);
+  n.wobbleLfoGain.gain.setTargetAtTime(w * 0.004, t, 0.1);
+  n.flutterLfoGain.gain.setTargetAtTime(w * 0.001, t, 0.1);
+  n.waveshaper.curve = makeSaturationCurve(10 + s * 200);
+  n.reverbWet.gain.setTargetAtTime(r * 0.7, t, 0.1);
+  n.reverbDry.gain.setTargetAtTime(1 - r * 0.3, t, 0.1);
+  n.staticGain.gain.setTargetAtTime(st * 0.15, t, 0.1);
 }
 
-// Wire up sliders
-Object.values(sliders).forEach(slider => {
-  slider.addEventListener('input', () => {
-    const valEl = slider.parentElement.querySelector('.value');
-    valEl.textContent = slider.value;
+Object.values(sliders).forEach(sl => {
+  sl.addEventListener('input', () => {
+    sl.parentElement.querySelector('.value').textContent = sl.value;
     updateFX();
   });
 });
@@ -681,226 +630,115 @@ Object.values(sliders).forEach(slider => {
 function drawDial() {
   const w = canvas.width / window.devicePixelRatio;
   const h = canvas.height / window.devicePixelRatio;
-  const dpr = window.devicePixelRatio;
-
   ctx.clearRect(0, 0, w, h);
 
-  const centerX = w / 2;
-  const centerY = h * 0.65;
-  const radius = Math.min(w * 0.4, h * 0.7);
+  const cx = w / 2, cy = h * 0.65;
+  const r = Math.min(w * 0.4, h * 0.7);
 
-  // Outer ring
   ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, Math.PI, 0, false);
-  ctx.strokeStyle = '#2a2a1a';
-  ctx.lineWidth = 3;
-  ctx.stroke();
+  ctx.arc(cx, cy, r, Math.PI, 0, false);
+  ctx.strokeStyle = '#2a2a1a'; ctx.lineWidth = 3; ctx.stroke();
 
-  // Tick marks
-  const tickCount = state.stations.length > 0 ? Math.min(state.stations.length, 80) : 40;
-  const arcSpan = Math.PI;
-  const startAngle = Math.PI;
-
-  for (let i = 0; i <= tickCount; i++) {
-    const angle = startAngle + (i / tickCount) * arcSpan;
-    const isMajor = i % 5 === 0;
-    const innerR = radius - (isMajor ? 25 : 15);
-    const outerR = radius + 5;
-
+  const ticks = state.stations.length > 0 ? Math.min(state.stations.length, 80) : 40;
+  for (let i = 0; i <= ticks; i++) {
+    const a = Math.PI + (i / ticks) * Math.PI;
+    const major = i % 5 === 0;
     ctx.beginPath();
-    ctx.moveTo(
-      centerX + Math.cos(angle) * innerR,
-      centerY + Math.sin(angle) * innerR
-    );
-    ctx.lineTo(
-      centerX + Math.cos(angle) * outerR,
-      centerY + Math.sin(angle) * outerR
-    );
-    ctx.strokeStyle = isMajor ? '#5a4a2f' : '#2a2a1a';
-    ctx.lineWidth = isMajor ? 2 : 1;
-    ctx.stroke();
+    ctx.moveTo(cx + Math.cos(a) * (r - (major ? 25 : 15)), cy + Math.sin(a) * (r - (major ? 25 : 15)));
+    ctx.lineTo(cx + Math.cos(a) * (r + 5), cy + Math.sin(a) * (r + 5));
+    ctx.strokeStyle = major ? '#5a4a2f' : '#2a2a1a';
+    ctx.lineWidth = major ? 2 : 1; ctx.stroke();
 
-    // Major tick labels
-    if (isMajor && state.stations.length > 0) {
-      const stationIdx = Math.floor((i / tickCount) * state.stations.length);
-      if (state.stations[stationIdx]) {
-        ctx.save();
-        ctx.font = '9px "JetBrains Mono"';
-        ctx.fillStyle = '#3a3a2a';
-        ctx.textAlign = 'center';
-        const labelR = radius + 18;
-        const lx = centerX + Math.cos(angle) * labelR;
-        const ly = centerY + Math.sin(angle) * labelR;
-        ctx.fillText(state.stations[stationIdx].country?.substring(0, 3).toUpperCase() || '', lx, ly);
+    if (major && state.stations.length > 0) {
+      const si = Math.floor((i / ticks) * state.stations.length);
+      if (state.stations[si]) {
+        ctx.save(); ctx.font = '9px "JetBrains Mono"';
+        ctx.fillStyle = '#3a3a2a'; ctx.textAlign = 'center';
+        const lr = r + 18;
+        ctx.fillText(state.stations[si].country?.substring(0, 3).toUpperCase() || '',
+          cx + Math.cos(a) * lr, cy + Math.sin(a) * lr);
         ctx.restore();
       }
     }
   }
 
-  // Current position indicator
-  const posAngle = startAngle + state.dialPosition * arcSpan;
-  const needleLen = radius - 35;
+  const pa = Math.PI + state.dialPosition * Math.PI;
+  // glow
+  ctx.beginPath(); ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(pa) * (r + 10), cy + Math.sin(pa) * (r + 10));
+  ctx.strokeStyle = 'rgba(196, 162, 101, 0.15)'; ctx.lineWidth = 8; ctx.stroke();
+  // needle
+  ctx.beginPath(); ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(pa) * (r - 35), cy + Math.sin(pa) * (r - 35));
+  ctx.strokeStyle = state.powered ? '#c4a265' : '#3a3a2a'; ctx.lineWidth = 2; ctx.stroke();
+  // center dot
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+  ctx.fillStyle = state.powered ? '#c4a265' : '#2a2a1a'; ctx.fill();
 
-  // Glow
-  ctx.beginPath();
-  ctx.moveTo(centerX, centerY);
-  ctx.lineTo(
-    centerX + Math.cos(posAngle) * (radius + 10),
-    centerY + Math.sin(posAngle) * (radius + 10)
-  );
-  ctx.strokeStyle = 'rgba(196, 162, 101, 0.15)';
-  ctx.lineWidth = 8;
-  ctx.stroke();
+  // freq text
+  ctx.font = '11px "JetBrains Mono"'; ctx.fillStyle = '#3a3a2a'; ctx.textAlign = 'center';
+  ctx.fillText(`${(87.5 + state.dialPosition * 20.5).toFixed(1)} MHz`, cx, cy + 25);
 
-  // Needle
-  ctx.beginPath();
-  ctx.moveTo(centerX, centerY);
-  ctx.lineTo(
-    centerX + Math.cos(posAngle) * needleLen,
-    centerY + Math.sin(posAngle) * needleLen
-  );
-  ctx.strokeStyle = state.powered ? '#c4a265' : '#3a3a2a';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // Center dot
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
-  ctx.fillStyle = state.powered ? '#c4a265' : '#2a2a1a';
-  ctx.fill();
-
-  // Active station marker
-  if (state.currentStation && state.stations.length > 0) {
-    const idx = state.currentStation.index / state.stations.length;
-    const a = startAngle + idx * arcSpan;
-    ctx.beginPath();
-    ctx.arc(
-      centerX + Math.cos(a) * (radius + 5),
-      centerY + Math.sin(a) * (radius + 5),
-      4, 0, Math.PI * 2
-    );
-    ctx.fillStyle = 'rgba(196, 162, 101, 0.6)';
-    ctx.fill();
-  }
-
-  // Subtle static shimmer at needle tip
+  // shimmer
   if (state.powered && state.currentStation) {
-    const tipX = centerX + Math.cos(posAngle) * needleLen;
-    const tipY = centerY + Math.sin(posAngle) * needleLen;
+    const tx = cx + Math.cos(pa) * (r - 35), ty = cy + Math.sin(pa) * (r - 35);
     for (let i = 0; i < 5; i++) {
-      const ox = (Math.random() - 0.5) * 10;
-      const oy = (Math.random() - 0.5) * 10;
       ctx.beginPath();
-      ctx.arc(tipX + ox, tipY + oy, 1, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(196, 162, 101, ${Math.random() * 0.3})`;
-      ctx.fill();
+      ctx.arc(tx + (Math.random() - 0.5) * 10, ty + (Math.random() - 0.5) * 10, 1, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(196,162,101,${Math.random() * 0.3})`; ctx.fill();
     }
   }
-
-  // Freq text at bottom
-  ctx.font = '11px "JetBrains Mono"';
-  ctx.fillStyle = '#3a3a2a';
-  ctx.textAlign = 'center';
-  const freq = (87.5 + state.dialPosition * 20.5).toFixed(1);
-  ctx.fillText(`${freq} MHz`, centerX, centerY + 25);
 }
 
 // ─── Dial interaction ───────────────────────────────────────────
-function handleDialMove(clientX) {
+function handleDial(clientX) {
   const rect = canvas.getBoundingClientRect();
-  const x = (clientX - rect.left) / rect.width;
-  state.dialPosition = Math.max(0, Math.min(1, x));
-
+  state.dialPosition = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
   if (state.powered && state.stations.length > 0) {
     const idx = Math.floor(state.dialPosition * (state.stations.length - 1));
-    if (idx !== state.stationIndex) {
-      state.stationIndex = idx;
-      loadStation(state.stations[idx]);
-    }
+    if (idx !== state.stationIndex) { state.stationIndex = idx; loadStation(state.stations[idx]); }
   }
-
   drawDial();
 }
 
-canvas.addEventListener('mousedown', (e) => {
-  state.dragging = true;
-  handleDialMove(e.clientX);
-});
+canvas.addEventListener('mousedown', e => { state.dragging = true; handleDial(e.clientX); });
+window.addEventListener('mousemove', e => { if (state.dragging) handleDial(e.clientX); });
+window.addEventListener('mouseup', () => { state.dragging = false; });
+canvas.addEventListener('touchstart', e => { state.dragging = true; handleDial(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
+window.addEventListener('touchmove', e => { if (state.dragging) handleDial(e.touches[0].clientX); }, { passive: false });
+window.addEventListener('touchend', () => { state.dragging = false; });
 
-window.addEventListener('mousemove', (e) => {
-  if (state.dragging) handleDialMove(e.clientX);
-});
-
-window.addEventListener('mouseup', () => {
-  state.dragging = false;
-});
-
-// Touch support
-canvas.addEventListener('touchstart', (e) => {
-  state.dragging = true;
-  handleDialMove(e.touches[0].clientX);
+canvas.addEventListener('wheel', e => {
   e.preventDefault();
-}, { passive: false });
-
-window.addEventListener('touchmove', (e) => {
-  if (state.dragging) handleDialMove(e.touches[0].clientX);
-}, { passive: false });
-
-window.addEventListener('touchend', () => {
-  state.dragging = false;
-});
-
-// Scroll to tune
-canvas.addEventListener('wheel', (e) => {
-  e.preventDefault();
-  const delta = e.deltaY > 0 ? 0.008 : -0.008;
-  state.dialPosition = Math.max(0, Math.min(1, state.dialPosition + delta));
-
+  state.dialPosition = Math.max(0, Math.min(1, state.dialPosition + (e.deltaY > 0 ? 0.008 : -0.008)));
   if (state.powered && state.stations.length > 0) {
     const idx = Math.floor(state.dialPosition * (state.stations.length - 1));
-    if (idx !== state.stationIndex) {
-      state.stationIndex = idx;
-      loadStation(state.stations[idx]);
-    }
+    if (idx !== state.stationIndex) { state.stationIndex = idx; loadStation(state.stations[idx]); }
   }
-
   drawDial();
 }, { passive: false });
 
-// ─── Power button ───────────────────────────────────────────────
+// ─── Power ──────────────────────────────────────────────────────
 powerBtn.addEventListener('click', togglePower);
-
-document.addEventListener('keydown', (e) => {
-  if (e.code === 'Space') {
-    e.preventDefault();
-    togglePower();
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); togglePower(); }
+  if (!state.powered) return;
+  if (e.code === 'ArrowRight' || e.code === 'ArrowDown') {
+    state.dialPosition = Math.min(1, state.dialPosition + 0.01);
+    const idx = Math.floor(state.dialPosition * (state.stations.length - 1));
+    if (idx !== state.stationIndex) { state.stationIndex = idx; loadStation(state.stations[idx]); }
+    drawDial();
   }
-  // Arrow keys to tune
-  if (state.powered) {
-    if (e.code === 'ArrowRight' || e.code === 'ArrowDown') {
-      state.dialPosition = Math.min(1, state.dialPosition + 0.01);
-      const idx = Math.floor(state.dialPosition * (state.stations.length - 1));
-      if (idx !== state.stationIndex) {
-        state.stationIndex = idx;
-        loadStation(state.stations[idx]);
-      }
-      drawDial();
-    }
-    if (e.code === 'ArrowLeft' || e.code === 'ArrowUp') {
-      state.dialPosition = Math.max(0, state.dialPosition - 0.01);
-      const idx = Math.floor(state.dialPosition * (state.stations.length - 1));
-      if (idx !== state.stationIndex) {
-        state.stationIndex = idx;
-        loadStation(state.stations[idx]);
-      }
-      drawDial();
-    }
+  if (e.code === 'ArrowLeft' || e.code === 'ArrowUp') {
+    state.dialPosition = Math.max(0, state.dialPosition - 0.01);
+    const idx = Math.floor(state.dialPosition * (state.stations.length - 1));
+    if (idx !== state.stationIndex) { state.stationIndex = idx; loadStation(state.stations[idx]); }
+    drawDial();
   }
 });
 
-function togglePower() {
+async function togglePower() {
   if (state.loading) return;
-
   state.powered = !state.powered;
   powerBtn.classList.toggle('on', state.powered);
   powerBtn.textContent = state.powered ? 'broadcasting' : 'tune in';
@@ -909,45 +747,28 @@ function togglePower() {
     initAudio();
     createProcessingChain();
     updateFX();
-
-    // Fade in master
     state.nodes.masterGain.gain.setTargetAtTime(0.7, state.audioCtx.currentTime, 0.5);
-
-    // Load first station
     if (state.stations.length > 0) {
       const idx = Math.floor(state.dialPosition * (state.stations.length - 1));
       state.stationIndex = idx;
       loadStation(state.stations[idx]);
     }
-
-    statusBar.textContent = 'broadcasting • scroll or drag to tune • ↑↓ to fine tune';
+    statusBar.textContent = 'broadcasting • scroll or drag to tune';
   } else {
-    // Fade out
-    if (state.nodes.masterGain) {
-      state.nodes.masterGain.gain.setTargetAtTime(0, state.audioCtx.currentTime, 0.3);
-    }
+    if (state.nodes.masterGain) state.nodes.masterGain.gain.setTargetAtTime(0, state.audioCtx.currentTime, 0.3);
     killStream();
     updateStationDisplay(null);
     statusBar.textContent = 'off air • space to power';
   }
-
   drawDial();
 }
 
-// ─── Station display ────────────────────────────────────────────
 function updateStationDisplay(station) {
-  if (!station) {
-    stationName.innerHTML = '<span class="station-unknown">— silence —</span>';
-    stationMeta.textContent = '';
-    return;
-  }
-
-  // Glitch effect on name change
+  if (!station) { stationName.innerHTML = '<span class="station-unknown">— silence —</span>'; stationMeta.textContent = ''; return; }
   stationName.style.opacity = '0';
   setTimeout(() => {
     stationName.textContent = station.name;
     stationName.style.opacity = '1';
-
     const parts = [];
     if (station.country) parts.push(station.country);
     if (station.codec) parts.push(station.codec);
@@ -956,25 +777,16 @@ function updateStationDisplay(station) {
   }, 150);
 }
 
-// ─── Ambient animation loop ─────────────────────────────────────
-let animFrame;
+// ─── Animation ──────────────────────────────────────────────────
 function animate() {
-  animFrame = requestAnimationFrame(animate);
-
-  // Slowly drift the dial position when powered (slight instability)
+  requestAnimationFrame(animate);
   if (state.powered && !state.dragging && Math.random() < 0.01) {
-    state.dialPosition += (Math.random() - 0.5) * 0.001;
-    state.dialPosition = Math.max(0, Math.min(1, state.dialPosition));
+    state.dialPosition = Math.max(0, Math.min(1, state.dialPosition + (Math.random() - 0.5) * 0.001));
     drawDial();
   }
-
-  // Redraw for static shimmer effect
-  if (state.powered) {
-    drawDial();
-  }
+  if (state.powered) drawDial();
 }
 
-// ─── Init ───────────────────────────────────────────────────────
 loadStations();
 drawDial();
 animate();
