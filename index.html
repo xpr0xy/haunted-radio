@@ -594,7 +594,10 @@ function killAll() {
 }
 
 // ─── CORS proxy URLs (tried in order) ──────────────────────────
+// First: our own Vercel proxy (deploy with `vercel deploy`)
+// Fallback: public proxies (unreliable)
 const PROXIES = [
+  u => `/api/proxy?url=${encodeURIComponent(u)}`,
   u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
   u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
 ];
