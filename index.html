@@ -593,12 +593,18 @@ function killAll() {
   }
 }
 
+// ─── CORS proxy URLs (tried in order) ──────────────────────────
+const PROXIES = [
+  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+];
+
 // ─── Load a station ─────────────────────────────────────────────
 async function loadStation(station) {
   const myId = ++S.loadId;
   killAll();
 
-  // update display
+  // update display immediately
   stationName.style.opacity = '0';
   setTimeout(() => {
     if (myId !== S.loadId) return;
@@ -611,56 +617,64 @@ async function loadStation(station) {
     stationMeta.textContent = parts.join(' · ');
   }, 120);
 
-  // try via CORS proxy so Web Audio can process it
-  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(station.url)}`;
+  // ── Attempt 1: via CORS proxy (enables Web Audio processing) ──
+  for (const makeUrl of PROXIES) {
+    if (myId !== S.loadId) return;
+    const proxyUrl = makeUrl(station.url);
+    try {
+      // verify proxy works before attaching to audio element
+      const check = await fetch(proxyUrl, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+      if (!check.ok) continue; // 403, 502, etc — try next proxy
+      if (myId !== S.loadId) return;
 
-  // first try: via proxy (for processing)
+      const audio = new Audio();
+      audio.crossOrigin = 'anonymous';
+      audio.preload = 'auto';
+      audio.src = proxyUrl;
+
+      await new Promise((resolve, reject) => {
+        audio.addEventListener('canplay', resolve, { once: true });
+        audio.addEventListener('error', reject, { once: true });
+        setTimeout(reject, 8000);
+        audio.load();
+      });
+
+      if (myId !== S.loadId) { audio.pause(); audio.src = ''; audio.remove(); return; }
+
+      S.audioEl = audio;
+      S.sourceNode = S.ctx.createMediaElementSource(audio);
+      S.sourceNode.connect(S.chain.inputGain);
+      audio.play().catch(() => {});
+      statusBar.textContent = 'broadcasting · effects active';
+      return;
+    } catch {
+      continue; // proxy failed, try next
+    }
+  }
+
+  // ── Attempt 2: direct playback (no processing but it plays) ──
+  if (myId !== S.loadId) return;
   try {
     const audio = new Audio();
-    audio.crossOrigin = 'anonymous';
-    audio.preload = 'none';
-    audio.src = proxyUrl;
+    audio.preload = 'auto';
+    audio.src = station.url;
 
-    // wait for it to start loading or fail
     await new Promise((resolve, reject) => {
       audio.addEventListener('canplay', resolve, { once: true });
-      audio.addEventListener('loadeddata', resolve, { once: true });
       audio.addEventListener('error', reject, { once: true });
-      setTimeout(reject, 6000);
+      setTimeout(reject, 8000);
       audio.load();
     });
 
     if (myId !== S.loadId) { audio.pause(); audio.src = ''; audio.remove(); return; }
 
-    // success — connect to processing chain
     S.audioEl = audio;
-    S.sourceNode = S.ctx.createMediaElementSource(audio);
-    S.sourceNode.connect(S.chain.inputGain);
     audio.play().catch(() => {});
-    statusBar.textContent = 'broadcasting · processing active';
-    return;
-  } catch {}
-
-  if (myId !== S.loadId) return;
-
-  // fallback: direct playback (no processing, but it plays)
-  const audio = new Audio();
-  audio.preload = 'none';
-  audio.src = station.url;
-
-  await new Promise((resolve, reject) => {
-    audio.addEventListener('canplay', resolve, { once: true });
-    audio.addEventListener('loadeddata', resolve, { once: true });
-    audio.addEventListener('error', reject, { once: true });
-    setTimeout(reject, 6000);
-    audio.load();
-  }).catch(() => {});
-
-  if (myId !== S.loadId) { audio.pause(); audio.src = ''; audio.remove(); return; }
-
-  S.audioEl = audio;
-  audio.play().catch(() => {});
-  statusBar.textContent = 'raw signal · no processing (CORS blocked)';
+    statusBar.textContent = 'raw signal · effects need CORS proxy';
+  } catch {
+    if (myId !== S.loadId) return;
+    statusBar.textContent = 'stream unreachable — try another';
+  }
 }
 
 // ─── FX ─────────────────────────────────────────────────────────
