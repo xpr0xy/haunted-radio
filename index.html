@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Haunted Radio</title>
-  <meta name="description" content="Tune drifting radio stations through a haunted Web Audio signal chain.">
+  <meta name="description" content="A phreaky live-radio receiver that drags real stations through drift, delay, bloom and decay.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
@@ -16,10 +16,29 @@
 
   <main class="shell">
     <header class="hero">
-      <div class="eyebrow"><span class="led led-amber"></span> spectral tuner / live shortwave hallucination</div>
+      <div class="eyebrow"><span class="led led-amber"></span> spectral tuner / fail-soft radio workstation / live proxy path</div>
       <h1>haunted radio</h1>
-      <p class="lede">live stations dragged through tape wobble, drift, static and ghost-tail delay. not nostalgia slop. an actual signal path.</p>
+      <p class="lede">real stations. unstable carriers. tape wobble, bloom, depth and controlled rot. built like an instrument, not a novelty prop.</p>
     </header>
+
+    <section class="topline" aria-label="receiver status rail">
+      <div class="rail-card">
+        <span>source</span>
+        <strong id="sourceBadge">booting</strong>
+      </div>
+      <div class="rail-card">
+        <span>path</span>
+        <strong id="pathBadge">silent</strong>
+      </div>
+      <div class="rail-card">
+        <span>carrier</span>
+        <strong id="carrierBadge">standby</strong>
+      </div>
+      <div class="rail-card">
+        <span>recoveries</span>
+        <strong id="recoveryBadge">0</strong>
+      </div>
+    </section>
 
     <section class="console" aria-label="haunted radio controls">
       <div class="panel panel-dial">
@@ -27,10 +46,27 @@
           <span>receiver</span>
           <span id="frequencyReadout">96.4 MHz</span>
         </div>
+
         <canvas id="dialCanvas" width="920" height="480" aria-label="tuning dial"></canvas>
+
         <div class="hint-row">
           <span>drag / scroll / arrows to tune</span>
           <span>space toggles power</span>
+        </div>
+
+        <div class="dial-footer">
+          <div class="footer-block">
+            <span>lock</span>
+            <strong id="lockState">off-air</strong>
+          </div>
+          <div class="footer-block">
+            <span>station</span>
+            <strong id="telemetryStation">0 / 0</strong>
+          </div>
+          <div class="footer-block footer-block-wide">
+            <span>runtime</span>
+            <strong id="runtimeStatus">receiver sleeping</strong>
+          </div>
         </div>
       </div>
 
@@ -46,7 +82,10 @@
         </div>
 
         <div class="meter-wrap" aria-hidden="true">
-          <div class="meter-label">signal / noise</div>
+          <div class="meter-label-row">
+            <span class="meter-label">signal / noise</span>
+            <span class="meter-detail" id="meterDetail">no analyser yet</span>
+          </div>
           <canvas id="meterCanvas" width="920" height="120"></canvas>
         </div>
 
@@ -58,6 +97,7 @@
         <div class="actions">
           <button id="powerBtn" class="power-btn">power on</button>
           <button id="scanBtn" class="secondary-btn">scan</button>
+          <button id="recoverBtn" class="secondary-btn">recover</button>
         </div>
 
         <div class="telemetry" aria-label="receiver telemetry">
@@ -70,8 +110,37 @@
             <strong id="telemetryPath">silent</strong>
           </div>
           <div class="telemetry-item">
-            <span>station</span>
-            <strong id="telemetryStation">0 / 0</strong>
+            <span>fallback</span>
+            <strong id="fallbackMode">live api</strong>
+          </div>
+          <div class="telemetry-item telemetry-item-wide">
+            <span>last fault</span>
+            <strong id="faultLine">none</strong>
+          </div>
+        </div>
+
+        <div class="route-block" aria-label="signal route">
+          <div class="panel-head panel-head-tight">
+            <span>signal route</span>
+            <span id="hostBadge">unknown host</span>
+          </div>
+          <div class="route-grid">
+            <div class="route-node">
+              <span>source</span>
+              <strong id="routeSource">live station</strong>
+            </div>
+            <div class="route-node">
+              <span>proxy</span>
+              <strong id="routeProxy">awaiting lock</strong>
+            </div>
+            <div class="route-node">
+              <span>output</span>
+              <strong id="routeOutput">silent bus</strong>
+            </div>
+            <div class="route-node">
+              <span>recovery</span>
+              <strong id="routeRecovery">ready</strong>
+            </div>
           </div>
         </div>
       </div>
@@ -86,47 +155,60 @@
           <label class="fx-control">
             <span class="fx-copy">
               <span>decay</span>
-              <strong id="decayValue">44</strong>
+              <strong id="decayValue">42</strong>
             </span>
-            <input id="decaySlider" type="range" min="0" max="100" value="44">
+            <input id="decaySlider" type="range" min="0" max="100" value="42">
+            <small>ghost-tail repeats and bloom</small>
           </label>
 
           <label class="fx-control">
             <span class="fx-copy">
               <span>wobble</span>
-              <strong id="wobbleValue">52</strong>
+              <strong id="wobbleValue">58</strong>
             </span>
-            <input id="wobbleSlider" type="range" min="0" max="100" value="52">
+            <input id="wobbleSlider" type="range" min="0" max="100" value="58">
+            <small>frequency drift and capstan instability</small>
           </label>
 
           <label class="fx-control">
             <span class="fx-copy">
               <span>dirt</span>
-              <strong id="dirtValue">36</strong>
+              <strong id="dirtValue">24</strong>
             </span>
-            <input id="dirtSlider" type="range" min="0" max="100" value="36">
+            <input id="dirtSlider" type="range" min="0" max="100" value="24">
+            <small>tape warmth, not shredded speaker fuzz</small>
           </label>
 
           <label class="fx-control">
             <span class="fx-copy">
               <span>void</span>
-              <strong id="voidValue">58</strong>
+              <strong id="voidValue">54</strong>
             </span>
-            <input id="voidSlider" type="range" min="0" max="100" value="58">
+            <input id="voidSlider" type="range" min="0" max="100" value="54">
+            <small>distance, room and tail decay</small>
           </label>
 
           <label class="fx-control">
             <span class="fx-copy">
               <span>static</span>
-              <strong id="staticValue">24</strong>
+              <strong id="staticValue">10</strong>
             </span>
-            <input id="staticSlider" type="range" min="0" max="100" value="24">
+            <input id="staticSlider" type="range" min="0" max="100" value="10">
+            <small>carrier hiss. zero should actually mean zero.</small>
           </label>
         </div>
 
         <div class="fx-notes">
-          <p>bandpass resonance drifts under a slow LFO. delay time gets wow + flutter modulation. the rest is saturation, convolution and a hand-built noise floor.</p>
+          <p>processed mode now keeps the noise floor low once a station locks, pushes wobble and delay into the foreground, and keeps dirt in the tape-saturation lane instead of clownshoes distortion.</p>
         </div>
+      </div>
+
+      <div class="panel panel-bandmap">
+        <div class="panel-head">
+          <span>nearby carriers</span>
+          <span id="bandmapCount">0 loaded</span>
+        </div>
+        <div class="bandmap-list" id="bandmapList"></div>
       </div>
     </section>
   </main>

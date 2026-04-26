@@ -39,7 +39,7 @@ function proxyRequest({ req, res, target, redirects = 0 }) {
       'Accept': '*/*',
       ...(req.headers.range ? { Range: req.headers.range } : {}),
     },
-    timeout: 15000,
+    timeout: 25000,
   }, (upstreamRes) => {
     const code = upstreamRes.statusCode || 502;
     if ([301, 302, 303, 307, 308].includes(code) && upstreamRes.headers.location) {

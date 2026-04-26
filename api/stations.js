@@ -101,6 +101,8 @@ const MIRRORS = [
   'https://de1.api.radio-browser.info',
   'https://fi1.api.radio-browser.info',
   'https://nl1.api.radio-browser.info',
+  'https://fr1.api.radio-browser.info',
+  'https://all.api.radio-browser.info',
 ];
 
 function normalizeStation(station) {
@@ -121,7 +123,7 @@ module.exports = async function handler(req, res) {
 
   for (const base of MIRRORS) {
     try {
-      const response = await fetch(`${base}/json/stations/search?limit=160&hidebroken=true&order=clickcount&reverse=true`, {
+      const response = await fetch(`${base}/json/stations/search?limit=220&hidebroken=true&order=clickcount&reverse=true`, {
         headers: {
           'User-Agent': 'HauntedRadio/2.0 (+https://github.com/xpr0xy/haunted-radio)'
         },
@@ -134,6 +136,7 @@ module.exports = async function handler(req, res) {
         .map(normalizeStation)
         .filter((station) => {
           if (!station.url) return false;
+          if (String(station.url).includes('.m3u8')) return false;
           if (seen.has(station.url)) return false;
           seen.add(station.url);
           return true;
