@@ -1,14 +1,23 @@
 {
   "name": "haunted-radio",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "2.0.0",
+  "description": "live radio tuner with haunted web audio processing and a built-in CORS proxy",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node api/local-server.js",
+    "start": "node api/local-server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "webaudio",
+    "radio",
+    "vercel",
+    "creative-coding"
+  ],
+  "author": "pr0xy",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "express": "^5.2.1"
   }

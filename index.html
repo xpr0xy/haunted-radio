@@ -1,875 +1,136 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Haunted Radio</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Special+Elite&display=swap');
-
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-  body {
-    background: #080808;
-    color: #e8c97a;
-    font-family: 'JetBrains Mono', monospace;
-    overflow-x: hidden;
-    min-height: 100vh;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    user-select: none;
-    -webkit-user-select: none;
-    padding: 16px;
-  }
-
-  #scanlines {
-    position: fixed; inset: 0;
-    pointer-events: none; z-index: 100;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
-    mix-blend-mode: multiply;
-  }
-
-  #grain {
-    position: fixed; inset: 0;
-    pointer-events: none; z-index: 99;
-    opacity: 0.035;
-    animation: grain 0.5s steps(6) infinite;
-  }
-
-  @keyframes grain {
-    0%,100% { transform: translate(0,0) }
-    10% { transform: translate(-5%,-10%) }
-    20% { transform: translate(-15%,5%) }
-    30% { transform: translate(7%,-25%) }
-    40% { transform: translate(-5%,25%) }
-    50% { transform: translate(-15%,10%) }
-    60% { transform: translate(15%,0%) }
-    70% { transform: translate(0%,15%) }
-    80% { transform: translate(3%,35%) }
-    90% { transform: translate(-10%,10%) }
-  }
-
-  .container {
-    position: relative;
-    width: 100%;
-    max-width: 520px;
-    z-index: 10;
-  }
-
-  .header {
-    text-align: center;
-    margin-bottom: 24px;
-    opacity: 0;
-    animation: fadeIn 2s ease forwards;
-  }
-
-  .header h1 {
-    font-family: 'Special Elite', cursive;
-    font-size: clamp(1.6em, 6vw, 2.6em);
-    color: #f0d590;
-    text-shadow: 0 0 30px rgba(240,213,144,0.35), 0 0 60px rgba(240,213,144,0.1);
-    letter-spacing: 6px;
-    text-transform: uppercase;
-  }
-
-  .header .subtitle {
-    font-size: 0.7em;
-    color: #9a8350;
-    margin-top: 4px;
-    letter-spacing: 3px;
-  }
-
-  .dial-container {
-    width: 100%;
-    height: 160px;
-    margin: 12px 0;
-  }
-
-  #dialCanvas {
-    width: 100%;
-    height: 100%;
-    cursor: grab;
-    touch-action: none;
-  }
-
-  #dialCanvas:active { cursor: grabbing; }
-
-  .station-display {
-    text-align: center;
-    margin: 12px 0;
-    min-height: 70px;
-  }
-
-  .station-name {
-    font-family: 'Special Elite', cursive;
-    font-size: clamp(1em, 4vw, 1.4em);
-    color: #f5e6b8;
-    text-shadow: 0 0 15px rgba(245,230,184,0.25);
-    transition: opacity 0.2s;
-    line-height: 1.3;
-  }
-
-  .station-meta {
-    font-size: 0.7em;
-    color: #a08d5a;
-    margin-top: 6px;
-    letter-spacing: 2px;
-  }
-
-  .station-unknown {
-    color: #6a5d3a;
-    font-style: italic;
-  }
-
-  .fx-panel {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
-    margin: 16px 0;
-  }
-
-  .fx-knob {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 8px 4px;
-    border: 1px solid #1a1608;
-    border-radius: 4px;
-    background: rgba(20,16,8,0.5);
-  }
-
-  .fx-knob .label {
-    font-size: 0.55em;
-    color: #a08d5a;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-  }
-
-  .fx-knob .value {
-    font-size: 0.75em;
-    color: #f0d590;
-    min-width: 24px;
-    text-align: center;
-  }
-
-  .fx-knob input[type="range"] {
-    -webkit-appearance: none;
-    width: 100%;
-    max-width: 70px;
-    height: 20px;
-    background: transparent;
-    outline: none;
-    cursor: pointer;
-  }
-
-  .fx-knob input[type="range"]::-webkit-slider-runnable-track {
-    height: 3px;
-    background: #2a2210;
-    border-radius: 2px;
-  }
-
-  .fx-knob input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #e8c97a;
-    margin-top: -8px;
-    box-shadow: 0 0 8px rgba(232,201,122,0.4);
-    cursor: pointer;
-  }
-
-  .fx-knob input[type="range"]::-moz-range-track {
-    height: 3px;
-    background: #2a2210;
-    border-radius: 2px;
-    border: none;
-  }
-
-  .fx-knob input[type="range"]::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #e8c97a;
-    border: none;
-    box-shadow: 0 0 8px rgba(232,201,122,0.4);
-    cursor: pointer;
-  }
-
-  .power-section {
-    text-align: center;
-    margin-top: 20px;
-  }
-
-  .power-btn {
-    font-family: 'Special Elite', cursive;
-    font-size: 1em;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    background: rgba(20,16,8,0.6);
-    border: 1px solid #3a3018;
-    color: #8a7a4a;
-    padding: 14px 36px;
-    cursor: pointer;
-    transition: all 0.4s;
-    border-radius: 2px;
-    min-width: 180px;
-    touch-action: manipulation;
-  }
-
-  .power-btn:hover, .power-btn:active {
-    border-color: #e8c97a;
-    color: #e8c97a;
-    box-shadow: 0 0 25px rgba(232,201,122,0.12);
-  }
-
-  .power-btn.on {
-    border-color: #e8c97a;
-    color: #f5e6b8;
-    box-shadow: 0 0 35px rgba(232,201,122,0.18);
-    animation: pulse 3s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%,100% { box-shadow: 0 0 35px rgba(232,201,122,0.18) }
-    50% { box-shadow: 0 0 55px rgba(232,201,122,0.28) }
-  }
-
-  .status-bar {
-    text-align: center;
-    font-size: 0.6em;
-    color: #5a4d2e;
-    letter-spacing: 2px;
-    margin-top: 16px;
-    z-index: 10;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-
-  @media (max-width: 380px) {
-    .fx-panel { grid-template-columns: repeat(3, 1fr); }
-    .dial-container { height: 130px; }
-  }
-
-  @media (max-height: 600px) {
-    .dial-container { height: 110px; }
-    .header { margin-bottom: 12px; }
-    .station-display { min-height: 50px; margin: 6px 0; }
-    .fx-panel { margin: 8px 0; gap: 4px; }
-    .power-section { margin-top: 10px; }
-    .power-btn { padding: 10px 28px; }
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px) }
-    to { opacity: 1; transform: translateY(0) }
-  }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Haunted Radio</title>
+  <meta name="description" content="Tune drifting radio stations through a haunted Web Audio signal chain.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-
-<div id="scanlines"></div>
-<div id="grain"></div>
-
-<div class="container">
-  <div class="header">
-    <h1>Haunted Radio</h1>
-    <div class="subtitle">tuning the dead frequencies</div>
-  </div>
-
-  <div class="dial-container">
-    <canvas id="dialCanvas"></canvas>
-  </div>
-
-  <div class="station-display">
-    <div class="station-name" id="stationName">
-      <span class="station-unknown">— silence —</span>
-    </div>
-    <div class="station-meta" id="stationMeta"></div>
-  </div>
-
-  <div class="fx-panel">
-    <div class="fx-knob">
-      <span class="label">decay</span>
-      <input type="range" min="0" max="100" value="40" id="decaySlider">
-      <span class="value" id="decayVal">40</span>
-    </div>
-    <div class="fx-knob">
-      <span class="label">wobble</span>
-      <input type="range" min="0" max="100" value="50" id="wobbleSlider">
-      <span class="value" id="wobbleVal">50</span>
-    </div>
-    <div class="fx-knob">
-      <span class="label">dirt</span>
-      <input type="range" min="0" max="100" value="35" id="satSlider">
-      <span class="value" id="satVal">35</span>
-    </div>
-    <div class="fx-knob">
-      <span class="label">void</span>
-      <input type="range" min="0" max="100" value="60" id="reverbSlider">
-      <span class="value" id="reverbVal">60</span>
-    </div>
-    <div class="fx-knob">
-      <span class="label">static</span>
-      <input type="range" min="0" max="100" value="25" id="staticSlider">
-      <span class="value" id="staticVal">25</span>
-    </div>
-  </div>
-
-  <div class="power-section">
-    <button class="power-btn" id="powerBtn">tune in</button>
-  </div>
-
-  <div class="status-bar" id="statusBar">loading stations…</div>
-</div>
-
-<script>
-// ─── State ──────────────────────────────────────────────────────
-const S = {
-  powered: false,
-  stations: [],
-  stationIndex: 0,
-  dialPosition: 0,
-  dragging: false,
-  loading: true,
-  // audio
-  ctx: null,          // AudioContext
-  audioEl: null,      // current Audio element
-  sourceNode: null,   // MediaElementSource (single, reused)
-  chain: {},          // processing chain nodes
-  loadId: 0,          // generation counter
-};
-
-// ─── DOM ────────────────────────────────────────────────────────
-const $ = id => document.getElementById(id);
-const canvas = $('dialCanvas');
-const c = canvas.getContext('2d');
-const powerBtn = $('powerBtn');
-const stationName = $('stationName');
-const stationMeta = $('stationMeta');
-const statusBar = $('statusBar');
-
-const sliders = {
-  decay:      { el: $('decaySlider'),    val: $('decayVal') },
-  wobble:     { el: $('wobbleSlider'),   val: $('wobbleVal') },
-  saturation: { el: $('satSlider'),      val: $('satVal') },
-  reverb:     { el: $('reverbSlider'),   val: $('reverbVal') },
-  static:     { el: $('staticSlider'),   val: $('staticVal') },
-};
-
-// wire sliders
-for (const k in sliders) {
-  const { el, val } = sliders[k];
-  el.addEventListener('input', () => { val.textContent = el.value; updateFX(); });
-}
-
-// ─── Grain ──────────────────────────────────────────────────────
-(function() {
-  const gc = document.createElement('canvas');
-  gc.width = gc.height = 256;
-  const gx = gc.getContext('2d');
-  const d = gx.createImageData(256, 256);
-  for (let i = 0; i < d.data.length; i += 4) {
-    const v = Math.random() * 255;
-    d.data[i] = d.data[i+1] = d.data[i+2] = v;
-    d.data[i+3] = 255;
-  }
-  gx.putImageData(d, 0, 0);
-  $('grain').style.backgroundImage = `url(${gc.toDataURL()})`;
-})();
-
-// ─── Canvas ─────────────────────────────────────────────────────
-function resize() {
-  const r = canvas.parentElement.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = r.width * dpr;
-  canvas.height = r.height * dpr;
-  c.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-window.addEventListener('resize', resize);
-resize();
-
-// ─── Fetch stations ─────────────────────────────────────────────
-async function loadStations() {
-  statusBar.textContent = 'scanning frequencies…';
-  const apis = [
-    'https://de1.api.radio-browser.info',
-    'https://nl1.api.radio-browser.info',
-    'https://at1.api.radio-browser.info',
-  ];
-  for (const base of apis) {
-    try {
-      const r = await fetch(`${base}/json/stations/search?limit=200&order=clickcount&reverse=true&hidebroken=true&has_https_failover=true`, { signal: AbortSignal.timeout(8000) });
-      if (!r.ok) continue;
-      const data = await r.json();
-      S.stations = data
-        .filter(s => s.url_resolved || s.url)
-        .map((s, i) => ({
-          name: s.name || 'Unknown',
-          url: s.url_resolved || s.url,
-          country: s.country || '',
-          codec: s.codec || '',
-          bitrate: s.bitrate || '',
-          idx: i,
-        }))
-        .sort(() => Math.random() - 0.5);
-      S.loading = false;
-      statusBar.textContent = `${S.stations.length} signals found · scroll or drag to tune`;
-      drawDial();
-      return;
-    } catch {}
-  }
-  statusBar.textContent = 'signal lost — refresh to rescan';
-}
-
-// ─── Audio helpers ──────────────────────────────────────────────
-function satCurve(amount) {
-  const n = 44100, curve = new Float32Array(n);
-  const k = amount / 100;
-  for (let i = 0; i < n; i++) {
-    const x = (i * 2) / n - 1;
-    curve[i] = ((Math.PI + k) * x) / (Math.PI + k * Math.abs(x));
-  }
-  return curve;
-}
-
-function reverbIR(ctx, dur, decay) {
-  const len = ctx.sampleRate * dur;
-  const buf = ctx.createBuffer(2, len, ctx.sampleRate);
-  for (let ch = 0; ch < 2; ch++) {
-    const d = buf.getChannelData(ch);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
-  }
-  return buf;
-}
-
-function noiseBuffer(ctx) {
-  const buf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  return buf;
-}
-
-// ─── Build audio chain (once) ───────────────────────────────────
-function initAudio() {
-  if (S.ctx) return;
-  S.ctx = new (window.AudioContext || window.webkitAudioContext)();
-
-  const ctx = S.ctx;
-  const n = S.chain;
-
-  // source entry point
-  n.inputGain = ctx.createGain();
-  n.inputGain.gain.value = 0.9;
-
-  // tone shaping
-  n.hiPass = ctx.createBiquadFilter();
-  n.hiPass.type = 'highpass';
-  n.hiPass.frequency.value = 100;
-
-  n.bpFilter = ctx.createBiquadFilter();
-  n.bpFilter.type = 'bandpass';
-  n.bpFilter.frequency.value = 800;
-  n.bpFilter.Q.value = 2.0; // audible resonance
-
-  // delay line (tape wobble)
-  n.delay = ctx.createDelay(1.0);
-  n.delay.delayTime.value = 0.08;
-  n.delayFb = ctx.createGain();
-  n.delayFb.gain.value = 0.3;
-  n.delayWet = ctx.createGain();
-  n.delayWet.gain.value = 0.5;
-  n.dry = ctx.createGain();
-  n.dry.gain.value = 0.6;
-
-  // saturation
-  n.waveshaper = ctx.createWaveShaper();
-  n.waveshaper.curve = satCurve(80);
-  n.waveshaper.oversample = '4x';
-
-  n.postGain = ctx.createGain();
-  n.postGain.gain.value = 0.7;
-
-  // reverb
-  n.convolver = ctx.createConvolver();
-  n.convolver.buffer = reverbIR(ctx, 4.0, 2.0);
-  n.reverbWet = ctx.createGain();
-  n.reverbWet.gain.value = 0.6;
-  n.reverbDry = ctx.createGain();
-  n.reverbDry.gain.value = 0.5;
-
-  // master
-  n.masterGain = ctx.createGain();
-  n.masterGain.gain.value = 0;
-
-  // static noise
-  n.staticGain = ctx.createGain();
-  n.staticGain.gain.value = 0.1;
-  const noiseSrc = ctx.createBufferSource();
-  noiseSrc.buffer = noiseBuffer(ctx);
-  noiseSrc.loop = true;
-  noiseSrc.connect(n.staticGain);
-  n.staticGain.connect(n.masterGain);
-  noiseSrc.start();
-
-  // LFO: bandpass sweep (drifting dial)
-  n.bpLfo = ctx.createOscillator();
-  n.bpLfo.type = 'sine';
-  n.bpLfo.frequency.value = 0.06;
-  n.bpLfoGain = ctx.createGain();
-  n.bpLfoGain.gain.value = 300;
-  n.bpLfo.connect(n.bpLfoGain);
-  n.bpLfoGain.connect(n.bpFilter.frequency);
-  n.bpLfo.start();
-
-  // LFO: delay time wobble (tape wow)
-  n.wowLfo = ctx.createOscillator();
-  n.wowLfo.type = 'sine';
-  n.wowLfo.frequency.value = 0.4;
-  n.wowLfoGain = ctx.createGain();
-  n.wowLfoGain.gain.value = 0.003;
-  n.wowLfo.connect(n.wowLfoGain);
-  n.wowLfoGain.connect(n.delay.delayTime);
-  n.wowLfo.start();
-
-  // LFO: delay time flutter (tape flutter)
-  n.flutterLfo = ctx.createOscillator();
-  n.flutterLfo.type = 'sawtooth';
-  n.flutterLfo.frequency.value = 5.0;
-  n.flutterLfoGain = ctx.createGain();
-  n.flutterLfoGain.gain.value = 0.0008;
-  n.flutterLfo.connect(n.flutterLfoGain);
-  n.flutterLfoGain.connect(n.delay.delayTime);
-  n.flutterLfo.start();
-
-  // wire: input → hiPass → bandpass → [dry + delay] → waveshaper → [reverb dry/wet] → master
-  n.inputGain.connect(n.hiPass);
-  n.hiPass.connect(n.bpFilter);
-
-  // dry path
-  n.bpFilter.connect(n.dry);
-
-  // delay path
-  n.bpFilter.connect(n.delay);
-  n.delay.connect(n.delayFb);
-  n.delayFb.connect(n.delay); // feedback loop
-  n.delay.connect(n.delayWet);
-
-  // merge → saturation
-  n.dry.connect(n.waveshaper);
-  n.delayWet.connect(n.waveshaper);
-
-  // saturation → reverb split
-  n.waveshaper.connect(n.postGain);
-  n.postGain.connect(n.convolver);
-  n.postGain.connect(n.reverbDry);
-
-  // reverb merge → master
-  n.convolver.connect(n.reverbWet);
-  n.reverbWet.connect(n.masterGain);
-  n.reverbDry.connect(n.masterGain);
-  n.masterGain.connect(ctx.destination);
-
-  // create the single persistent source node slot
-  // (we'll attach audio elements to it)
-}
-
-// ─── Kill everything ────────────────────────────────────────────
-function killAll() {
-  S.loadId++; // invalidate all in-flight loads
-  if (S.audioEl) {
-    S.audioEl.pause();
-    S.audioEl.src = '';
-    S.audioEl.removeAttribute('src');
-    S.audioEl.remove();
-    S.audioEl = null;
-  }
-  if (S.sourceNode) {
-    try { S.sourceNode.disconnect(); } catch {}
-    S.sourceNode = null;
-  }
-}
-
-// ─── CORS proxy URLs (tried in order) ──────────────────────────
-// First: our own Vercel proxy (deploy with `vercel deploy`)
-// Fallback: public proxies (unreliable)
-const PROXIES = [
-  u => `/api/proxy?url=${encodeURIComponent(u)}`,
-  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-];
-
-// ─── Load a station ─────────────────────────────────────────────
-async function loadStation(station) {
-  const myId = ++S.loadId;
-  killAll();
-
-  // update display immediately
-  stationName.style.opacity = '0';
-  setTimeout(() => {
-    if (myId !== S.loadId) return;
-    stationName.textContent = station.name;
-    stationName.style.opacity = '1';
-    const parts = [];
-    if (station.country) parts.push(station.country);
-    if (station.codec) parts.push(station.codec);
-    if (station.bitrate) parts.push(station.bitrate + 'kbps');
-    stationMeta.textContent = parts.join(' · ');
-  }, 120);
-
-  // ── Attempt 1: via CORS proxy (enables Web Audio processing) ──
-  for (const makeUrl of PROXIES) {
-    if (myId !== S.loadId) return;
-    const proxyUrl = makeUrl(station.url);
-    try {
-      // verify proxy returns actual audio, not an interstitial page
-      const check = await fetch(proxyUrl, { method: 'GET', signal: AbortSignal.timeout(5000) });
-      if (!check.ok) continue;
-      const ct = check.headers.get('content-type') || '';
-      check.body?.cancel();
-      if (!ct.includes('audio') && !ct.includes('octet-stream') && !ct.includes('mpeg')) continue;
-      if (myId !== S.loadId) return;
-
-      const audio = new Audio();
-      audio.crossOrigin = 'anonymous';
-      audio.preload = 'auto';
-      audio.src = proxyUrl;
-
-      // live streams need .play() to start, then wait for 'playing' event
-      await new Promise((resolve, reject) => {
-        audio.addEventListener('playing', resolve, { once: true });
-        audio.addEventListener('error', reject, { once: true });
-        setTimeout(reject, 8000);
-        audio.play().catch(reject);
-      });
-
-      if (myId !== S.loadId) { audio.pause(); audio.src = ''; audio.remove(); return; }
-
-      S.audioEl = audio;
-      S.sourceNode = S.ctx.createMediaElementSource(audio);
-      S.sourceNode.connect(S.chain.inputGain);
-      statusBar.textContent = 'broadcasting · effects active';
-      return;
-    } catch {
-      continue;
-    }
-  }
-
-  // ── Attempt 2: direct playback (no processing but it plays) ──
-  if (myId !== S.loadId) return;
-  try {
-    const audio = new Audio();
-    audio.preload = 'auto';
-    audio.src = station.url;
-
-    await new Promise((resolve, reject) => {
-      audio.addEventListener('playing', resolve, { once: true });
-      audio.addEventListener('error', reject, { once: true });
-      setTimeout(reject, 10000);
-      audio.play().catch(reject);
-    });
-
-    if (myId !== S.loadId) { audio.pause(); audio.src = ''; audio.remove(); return; }
-
-    S.audioEl = audio;
-    statusBar.textContent = 'raw signal · effects need CORS proxy';
-  } catch {
-    if (myId !== S.loadId) return;
-    statusBar.textContent = 'stream unreachable — try another';
-  }
-}
-
-// ─── FX ─────────────────────────────────────────────────────────
-function updateFX() {
-  const n = S.chain;
-  if (!n.delay) return;
-  const t = S.ctx.currentTime;
-  const v = k => sliders[k].el.value / 100;
-
-  // decay: delay feedback + wet mix
-  n.delayFb.gain.setTargetAtTime(v('decay') * 0.55, t, 0.05);
-  n.delayWet.gain.setTargetAtTime(0.15 + v('decay') * 0.7, t, 0.05);
-
-  // wobble: LFO amplitude on delay time
-  n.wowLfoGain.gain.setTargetAtTime(v('wobble') * 0.006, t, 0.05);
-  n.flutterLfoGain.gain.setTargetAtTime(v('wobble') * 0.002, t, 0.05);
-
-  // dirt: saturation curve
-  n.waveshaper.curve = satCurve(5 + v('saturation') * 300);
-
-  // void: reverb mix
-  n.reverbWet.gain.setTargetAtTime(v('reverb') * 0.8, t, 0.05);
-  n.reverbDry.gain.setTargetAtTime(1.0 - v('reverb') * 0.5, t, 0.05);
-
-  // static: noise floor
-  n.staticGain.gain.setTargetAtTime(v('static') * 0.2, t, 0.05);
-}
-
-// ─── Dial drawing ───────────────────────────────────────────────
-function drawDial() {
-  const w = canvas.width / (window.devicePixelRatio || 1);
-  const h = canvas.height / (window.devicePixelRatio || 1);
-  c.clearRect(0, 0, w, h);
-
-  const cx = w / 2, cy = h * 0.6;
-  const r = Math.min(w * 0.42, h * 0.65);
-
-  // outer arc
-  c.beginPath();
-  c.arc(cx, cy, r, Math.PI, 0, false);
-  c.strokeStyle = '#3a3018';
-  c.lineWidth = 2;
-  c.stroke();
-
-  // ticks
-  const ticks = S.stations.length > 0 ? Math.min(S.stations.length, 60) : 30;
-  for (let i = 0; i <= ticks; i++) {
-    const a = Math.PI + (i / ticks) * Math.PI;
-    const major = i % 5 === 0;
-    const inner = r - (major ? 22 : 12);
-    c.beginPath();
-    c.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
-    c.lineTo(cx + Math.cos(a) * (r + 4), cy + Math.sin(a) * (r + 4));
-    c.strokeStyle = major ? '#8a7a4a' : '#2a2210';
-    c.lineWidth = major ? 1.5 : 0.8;
-    c.stroke();
-  }
-
-  // needle
-  const pa = Math.PI + S.dialPosition * Math.PI;
-  // glow
-  c.beginPath();
-  c.moveTo(cx, cy);
-  c.lineTo(cx + Math.cos(pa) * (r + 8), cy + Math.sin(pa) * (r + 8));
-  c.strokeStyle = 'rgba(232,201,122,0.12)';
-  c.lineWidth = 8;
-  c.stroke();
-  // line
-  c.beginPath();
-  c.moveTo(cx, cy);
-  c.lineTo(cx + Math.cos(pa) * (r - 30), cy + Math.sin(pa) * (r - 30));
-  c.strokeStyle = S.powered ? '#e8c97a' : '#3a3018';
-  c.lineWidth = 2;
-  c.stroke();
-  // tip
-  c.beginPath();
-  c.arc(cx + Math.cos(pa) * (r - 30), cy + Math.sin(pa) * (r - 30), 3, 0, Math.PI * 2);
-  c.fillStyle = S.powered ? '#f0d590' : '#2a2210';
-  c.fill();
-  // center
-  c.beginPath();
-  c.arc(cx, cy, 4, 0, Math.PI * 2);
-  c.fillStyle = S.powered ? '#e8c97a' : '#1a1608';
-  c.fill();
-
-  // freq
-  c.font = '11px "JetBrains Mono"';
-  c.fillStyle = '#8a7a4a';
-  c.textAlign = 'center';
-  c.fillText(`${(87.5 + S.dialPosition * 20.5).toFixed(1)} MHz`, cx, cy + 22);
-}
-
-// ─── Dial interaction ───────────────────────────────────────────
-function dialTo(clientX) {
-  const rect = canvas.getBoundingClientRect();
-  S.dialPosition = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-  if (S.powered && S.stations.length > 0) {
-    const idx = Math.floor(S.dialPosition * (S.stations.length - 1));
-    if (idx !== S.stationIndex) {
-      S.stationIndex = idx;
-      loadStation(S.stations[idx]);
-    }
-  }
-  drawDial();
-}
-
-canvas.addEventListener('pointerdown', e => {
-  S.dragging = true;
-  canvas.setPointerCapture(e.pointerId);
-  dialTo(e.clientX);
-});
-canvas.addEventListener('pointermove', e => {
-  if (S.dragging) dialTo(e.clientX);
-});
-canvas.addEventListener('pointerup', e => {
-  S.dragging = false;
-  canvas.releasePointerCapture(e.pointerId);
-});
-canvas.addEventListener('pointercancel', () => { S.dragging = false; });
-
-canvas.addEventListener('wheel', e => {
-  e.preventDefault();
-  S.dialPosition = Math.max(0, Math.min(1, S.dialPosition + (e.deltaY > 0 ? 0.01 : -0.01)));
-  if (S.powered && S.stations.length > 0) {
-    const idx = Math.floor(S.dialPosition * (S.stations.length - 1));
-    if (idx !== S.stationIndex) {
-      S.stationIndex = idx;
-      loadStation(S.stations[idx]);
-    }
-  }
-  drawDial();
-}, { passive: false });
-
-// ─── Power ──────────────────────────────────────────────────────
-powerBtn.addEventListener('click', togglePower);
-
-function togglePower() {
-  if (S.loading) return;
-  S.powered = !S.powered;
-  powerBtn.classList.toggle('on', S.powered);
-  powerBtn.textContent = S.powered ? 'broadcasting' : 'tune in';
-
-  if (S.powered) {
-    initAudio();
-    updateFX();
-    S.chain.masterGain.gain.setTargetAtTime(0.8, S.ctx.currentTime, 0.5);
-    if (S.stations.length > 0) {
-      S.stationIndex = Math.floor(S.dialPosition * (S.stations.length - 1));
-      loadStation(S.stations[S.stationIndex]);
-    }
-    statusBar.textContent = 'broadcasting · scroll or drag to tune';
-  } else {
-    killAll();
-    if (S.chain.masterGain) S.chain.masterGain.gain.setTargetAtTime(0, S.ctx.currentTime, 0.3);
-    stationName.innerHTML = '<span class="station-unknown">— silence —</span>';
-    stationMeta.textContent = '';
-    statusBar.textContent = 'off air';
-  }
-  drawDial();
-}
-
-document.addEventListener('keydown', e => {
-  if (e.code === 'Space') { e.preventDefault(); togglePower(); return; }
-  if (!S.powered) return;
-  const step = 0.012;
-  if (e.code === 'ArrowRight' || e.code === 'ArrowDown') {
-    S.dialPosition = Math.min(1, S.dialPosition + step);
-  } else if (e.code === 'ArrowLeft' || e.code === 'ArrowUp') {
-    S.dialPosition = Math.max(0, S.dialPosition - step);
-  } else return;
-  const idx = Math.floor(S.dialPosition * (S.stations.length - 1));
-  if (idx !== S.stationIndex) { S.stationIndex = idx; loadStation(S.stations[idx]); }
-  drawDial();
-});
-
-// ─── Loop ───────────────────────────────────────────────────────
-function loop() {
-  requestAnimationFrame(loop);
-  if (S.powered) {
-    if (!S.dragging && Math.random() < 0.008) {
-      S.dialPosition = Math.max(0, Math.min(1, S.dialPosition + (Math.random() - 0.5) * 0.0008));
-    }
-    drawDial();
-  }
-}
-
-// ─── Init ───────────────────────────────────────────────────────
-loadStations();
-drawDial();
-loop();
-</script>
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <main class="shell">
+    <header class="hero">
+      <div class="eyebrow"><span class="led led-amber"></span> spectral tuner / live shortwave hallucination</div>
+      <h1>haunted radio</h1>
+      <p class="lede">live stations dragged through tape wobble, drift, static and ghost-tail delay. not nostalgia slop. an actual signal path.</p>
+    </header>
+
+    <section class="console" aria-label="haunted radio controls">
+      <div class="panel panel-dial">
+        <div class="panel-head">
+          <span>receiver</span>
+          <span id="frequencyReadout">96.4 MHz</span>
+        </div>
+        <canvas id="dialCanvas" width="920" height="480" aria-label="tuning dial"></canvas>
+        <div class="hint-row">
+          <span>drag / scroll / arrows to tune</span>
+          <span>space toggles power</span>
+        </div>
+      </div>
+
+      <div class="panel panel-readout">
+        <div class="panel-head">
+          <span>signal readout</span>
+          <span class="cursor"></span>
+        </div>
+
+        <div class="station-block">
+          <div class="station-name" id="stationName">— dead air —</div>
+          <div class="station-meta" id="stationMeta">waiting for carrier</div>
+        </div>
+
+        <div class="meter-wrap" aria-hidden="true">
+          <div class="meter-label">signal / noise</div>
+          <canvas id="meterCanvas" width="920" height="120"></canvas>
+        </div>
+
+        <div class="status-row">
+          <div class="status-chip" id="statusChip">standby</div>
+          <div class="status-text" id="statusText">loading stations…</div>
+        </div>
+
+        <div class="actions">
+          <button id="powerBtn" class="power-btn">power on</button>
+          <button id="scanBtn" class="secondary-btn">scan</button>
+        </div>
+
+        <div class="telemetry" aria-label="receiver telemetry">
+          <div class="telemetry-item">
+            <span>mode</span>
+            <strong id="telemetryMode">standby</strong>
+          </div>
+          <div class="telemetry-item">
+            <span>path</span>
+            <strong id="telemetryPath">silent</strong>
+          </div>
+          <div class="telemetry-item">
+            <span>station</span>
+            <strong id="telemetryStation">0 / 0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel panel-fx">
+        <div class="panel-head">
+          <span>degradation chain</span>
+          <span class="led led-green"></span>
+        </div>
+
+        <div class="fx-grid">
+          <label class="fx-control">
+            <span class="fx-copy">
+              <span>decay</span>
+              <strong id="decayValue">44</strong>
+            </span>
+            <input id="decaySlider" type="range" min="0" max="100" value="44">
+          </label>
+
+          <label class="fx-control">
+            <span class="fx-copy">
+              <span>wobble</span>
+              <strong id="wobbleValue">52</strong>
+            </span>
+            <input id="wobbleSlider" type="range" min="0" max="100" value="52">
+          </label>
+
+          <label class="fx-control">
+            <span class="fx-copy">
+              <span>dirt</span>
+              <strong id="dirtValue">36</strong>
+            </span>
+            <input id="dirtSlider" type="range" min="0" max="100" value="36">
+          </label>
+
+          <label class="fx-control">
+            <span class="fx-copy">
+              <span>void</span>
+              <strong id="voidValue">58</strong>
+            </span>
+            <input id="voidSlider" type="range" min="0" max="100" value="58">
+          </label>
+
+          <label class="fx-control">
+            <span class="fx-copy">
+              <span>static</span>
+              <strong id="staticValue">24</strong>
+            </span>
+            <input id="staticSlider" type="range" min="0" max="100" value="24">
+          </label>
+        </div>
+
+        <div class="fx-notes">
+          <p>bandpass resonance drifts under a slow LFO. delay time gets wow + flutter modulation. the rest is saturation, convolution and a hand-built noise floor.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
 </body>
 </html>
