@@ -1,100 +1,54 @@
 const FALLBACK_STATIONS = [
+  { name: 'Classic Vinyl HD', url: 'https://icecast.walmradio.com:8443/classic', country: 'The United States Of America', codec: 'MP3', bitrate: 320, tags: 'oldies,jazz,lounge,swing' },
+  { name: 'SomaFM Drone Zone', url: 'https://ice6.somafm.com/dronezone-128-mp3', country: 'The United States Of America', codec: 'MP3', bitrate: 128, tags: 'ambient,drone,space' },
+  { name: 'SomaFM Dark Zone', url: 'https://ice6.somafm.com/darkzone-128-mp3', country: 'The United States Of America', codec: 'MP3', bitrate: 128, tags: 'dark ambient,experimental' },
+  { name: 'BBC World Service', url: 'http://stream.live.vc.bbcmedia.co.uk/bbc_world_service', country: 'The United Kingdom', codec: 'MP3', bitrate: 56, tags: 'news,talk' },
+  { name: 'MANGORADIO', url: 'https://mangoradio.stream.laut.fm/mangoradio', country: 'Germany', codec: 'MP3', bitrate: 128, tags: 'music,variety' },
+  { name: '101 SMOOTH JAZZ', url: 'http://jking.cdnstream1.com/b22139_128mp3', country: 'The United States Of America', codec: 'MP3', bitrate: 128, tags: 'easy listening,jazz,smooth jazz' },
+  { name: 'Radio Paradise Main Mix (EU) 320k AAC', url: 'http://stream-uk1.radioparadise.com/aac-320', country: 'The United States Of America', codec: 'AAC', bitrate: 320, tags: 'eclectic,ambient,rock' },
+  { name: 'SWR3', url: 'https://liveradio.swr.de/sw282p3/swr3/play.mp3', country: 'Germany', codec: 'MP3', bitrate: 128, tags: 'news,pop,rock' },
+  { name: 'Deutschlandfunk | DLF | MP3 128k', url: 'https://st01.sslstream.dlf.de/dlf/01/128/mp3/stream.mp3?aggregator=web', country: 'Germany', codec: 'MP3', bitrate: 128, tags: 'culture,news,public service' },
+  { name: 'Dance Wave!', url: 'https://dancewave.online/dance.mp3', country: 'Hungary', codec: 'MP3', bitrate: 128, tags: 'dance,house,trance' },
+  { name: 'JOE', url: 'https://stream.joe.nl/joe/aachigh', country: 'The Netherlands', codec: 'AAC+', bitrate: 95, tags: 'pop,rock' },
+  { name: '1LIVE', url: 'http://wdr-1live-live.icecast.wdr.de/wdr/1live/live/mp3/128/stream.mp3', country: 'Germany', codec: 'MP3', bitrate: 128, tags: 'public radio,rock,top 40' },
+];
+
+const PRESETS = [
   {
-    name: 'Classic Vinyl HD',
-    url: 'https://icecast.walmradio.com:8443/classic',
-    country: 'The United States Of America',
-    codec: 'MP3',
-    bitrate: 320,
-    tags: 'oldies,jazz,lounge,swing',
+    id: 'manual',
+    name: 'manual',
+    summary: 'raw machine state. tune first, then wreck it deliberately.',
+    guidance: 'manual scene armed. lock a carrier and shape from zero.',
+    values: null,
   },
   {
-    name: 'SomaFM Drone Zone',
-    url: 'https://ice6.somafm.com/dronezone-128-mp3',
-    country: 'The United States Of America',
-    codec: 'MP3',
-    bitrate: 128,
-    tags: 'ambient,drone,space',
+    id: 'numbers',
+    name: 'numbers station',
+    summary: 'tight bandpass, eerie tail, moderate wobble, disciplined static floor.',
+    guidance: 'cold voice fragments and disciplined carrier fog.',
+    values: { decay: 48, wobble: 36, dirt: 18, void: 58, static: 12 },
   },
   {
-    name: 'SomaFM Dark Zone',
-    url: 'https://ice6.somafm.com/darkzone-128-mp3',
-    country: 'The United States Of America',
-    codec: 'MP3',
-    bitrate: 128,
-    tags: 'dark ambient,experimental',
+    id: 'graveyard',
+    name: 'graveyard drift',
+    summary: 'slow wow, long tails, soft corrosion, deep room bloom.',
+    guidance: 'best for ambient carriers and half-dead talk radio.',
+    values: { decay: 66, wobble: 63, dirt: 22, void: 74, static: 14 },
   },
   {
-    name: 'BBC World Service',
-    url: 'http://stream.live.vc.bbcmedia.co.uk/bbc_world_service',
-    country: 'The United Kingdom',
-    codec: 'MP3',
-    bitrate: 56,
-    tags: 'news,talk',
+    id: 'pirate',
+    name: 'pirate uplink',
+    summary: 'punchier dirt, shorter tails, more flutter, slightly dirtier front-end.',
+    guidance: 'for illicit club transmitters and rougher live music stations.',
+    values: { decay: 35, wobble: 57, dirt: 34, void: 38, static: 9 },
   },
   {
-    name: 'MANGORADIO',
-    url: 'https://mangoradio.stream.laut.fm/mangoradio',
-    country: 'Germany',
-    codec: 'MP3',
-    bitrate: 128,
-    tags: 'music,variety',
+    id: 'void',
+    name: 'void bloom',
+    summary: 'reverb-forward, unstable, fog-heavy, almost dissolving into the room.',
+    guidance: 'use when you want the room to swallow the source.',
+    values: { decay: 71, wobble: 44, dirt: 14, void: 88, static: 11 },
   },
-  {
-    name: '101 SMOOTH JAZZ',
-    url: 'http://jking.cdnstream1.com/b22139_128mp3',
-    country: 'The United States Of America',
-    codec: 'MP3',
-    bitrate: 128,
-    tags: 'easy listening,jazz,smooth jazz',
-  },
-  {
-    name: 'Radio Paradise Main Mix (EU) 320k AAC',
-    url: 'http://stream-uk1.radioparadise.com/aac-320',
-    country: 'The United States Of America',
-    codec: 'AAC',
-    bitrate: 320,
-    tags: 'eclectic,ambient,rock',
-  },
-  {
-    name: 'SWR3',
-    url: 'https://liveradio.swr.de/sw282p3/swr3/play.mp3',
-    country: 'Germany',
-    codec: 'MP3',
-    bitrate: 128,
-    tags: 'news,pop,rock',
-  },
-  {
-    name: 'Deutschlandfunk | DLF | MP3 128k',
-    url: 'https://st01.sslstream.dlf.de/dlf/01/128/mp3/stream.mp3?aggregator=web',
-    country: 'Germany',
-    codec: 'MP3',
-    bitrate: 128,
-    tags: 'culture,news,public service',
-  },
-  {
-    name: 'Dance Wave!',
-    url: 'https://dancewave.online/dance.mp3',
-    country: 'Hungary',
-    codec: 'MP3',
-    bitrate: 128,
-    tags: 'dance,house,trance',
-  },
-  {
-    name: 'JOE',
-    url: 'https://stream.joe.nl/joe/aachigh',
-    country: 'The Netherlands',
-    codec: 'AAC+',
-    bitrate: 95,
-    tags: 'pop,rock',
-  },
-  {
-    name: '1LIVE',
-    url: 'http://wdr-1live-live.icecast.wdr.de/wdr/1live/live/mp3/128/stream.mp3',
-    country: 'Germany',
-    codec: 'MP3',
-    bitrate: 128,
-    tags: 'public radio,rock,top 40',
-  }
 ];
 
 const state = {
@@ -105,15 +59,17 @@ const state = {
   dialValue: 0.43,
   stationIndex: 0,
   isLoadingStations: true,
+  activePreset: 'manual',
   loadToken: 0,
   tuneTimer: null,
   driftPhase: Math.random() * Math.PI * 2,
-  lastLevel: 0,
   animationStart: performance.now(),
   recoveries: 0,
   lastFault: 'none',
   currentRuntime: 'receiver sleeping',
+  eventLog: [],
   cooldowns: new Map(),
+  analyserHistory: [],
   audio: {
     ctx: null,
     currentEl: null,
@@ -121,41 +77,57 @@ const state = {
     sourceNode: null,
     analyser: null,
     meterData: null,
+    timeData: null,
     runtimeWatchers: [],
     chain: {},
   },
 };
 
 const dom = {
-  dialCanvas: document.getElementById('dialCanvas'),
-  meterCanvas: document.getElementById('meterCanvas'),
-  frequencyReadout: document.getElementById('frequencyReadout'),
-  stationName: document.getElementById('stationName'),
-  stationMeta: document.getElementById('stationMeta'),
   statusChip: document.getElementById('statusChip'),
   statusText: document.getElementById('statusText'),
   sourceBadge: document.getElementById('sourceBadge'),
   pathBadge: document.getElementById('pathBadge'),
   carrierBadge: document.getElementById('carrierBadge'),
   recoveryBadge: document.getElementById('recoveryBadge'),
-  lockState: document.getElementById('lockState'),
-  runtimeStatus: document.getElementById('runtimeStatus'),
-  meterDetail: document.getElementById('meterDetail'),
+  powerBtn: document.getElementById('powerBtn'),
+  scanBtn: document.getElementById('scanBtn'),
+  recoverBtn: document.getElementById('recoverBtn'),
+  guidanceLine: document.getElementById('guidanceLine'),
+  activePresetName: document.getElementById('activePresetName'),
+  presetSummary: document.getElementById('presetSummary'),
+  presetList: document.getElementById('presetList'),
   telemetryMode: document.getElementById('telemetryMode'),
   telemetryPath: document.getElementById('telemetryPath'),
   telemetryStation: document.getElementById('telemetryStation'),
   fallbackMode: document.getElementById('fallbackMode'),
+  runtimeStatus: document.getElementById('runtimeStatus'),
   faultLine: document.getElementById('faultLine'),
   hostBadge: document.getElementById('hostBadge'),
-  routeSource: document.getElementById('routeSource'),
-  routeProxy: document.getElementById('routeProxy'),
-  routeOutput: document.getElementById('routeOutput'),
-  routeRecovery: document.getElementById('routeRecovery'),
+  eventLog: document.getElementById('eventLog'),
+  stationName: document.getElementById('stationName'),
+  stationMeta: document.getElementById('stationMeta'),
+  frequencyReadout: document.getElementById('frequencyReadout'),
+  lockState: document.getElementById('lockState'),
+  signalQuality: document.getElementById('signalQuality'),
   bandmapCount: document.getElementById('bandmapCount'),
+  routeSource: document.getElementById('routeSource'),
+  routeRecovery: document.getElementById('routeRecovery'),
+  meterDetail: document.getElementById('meterDetail'),
+  routeOutput: document.getElementById('routeOutput'),
+  routeProxy: document.getElementById('routeProxy'),
+  routeCanvas: document.getElementById('routeCanvas'),
+  dialCanvas: document.getElementById('dialCanvas'),
+  scopeCanvas: document.getElementById('scopeCanvas'),
+  waterfallCanvas: document.getElementById('waterfallCanvas'),
+  routeSourceReadout: document.getElementById('routeSourceReadout'),
   bandmapList: document.getElementById('bandmapList'),
-  powerBtn: document.getElementById('powerBtn'),
-  scanBtn: document.getElementById('scanBtn'),
-  recoverBtn: document.getElementById('recoverBtn'),
+  workflowSteps: {
+    power: document.getElementById('stepPower'),
+    preset: document.getElementById('stepPreset'),
+    tune: document.getElementById('stepTune'),
+    shape: document.getElementById('stepShape'),
+  },
   sliders: {
     decay: document.getElementById('decaySlider'),
     wobble: document.getElementById('wobbleSlider'),
@@ -170,12 +142,30 @@ const dom = {
     void: document.getElementById('voidValue'),
     static: document.getElementById('staticValue'),
   },
+  fxViz: {
+    decay: document.getElementById('viz-decay'),
+    wobble: document.getElementById('viz-wobble'),
+    dirt: document.getElementById('viz-dirt'),
+    void: document.getElementById('viz-void'),
+    static: document.getElementById('viz-static'),
+  },
 };
 
-const dialCtx = dom.dialCanvas.getContext('2d');
-const meterCtx = dom.meterCanvas.getContext('2d');
-const dialBounds = { width: 920, height: 480, dpr: 1 };
-const meterBounds = { width: 920, height: 120, dpr: 1 };
+const ctxs = {
+  dial: dom.dialCanvas.getContext('2d'),
+  scope: dom.scopeCanvas.getContext('2d'),
+  waterfall: dom.waterfallCanvas.getContext('2d'),
+  route: dom.routeCanvas.getContext('2d'),
+  fx: Object.fromEntries(Object.entries(dom.fxViz).map(([key, canvas]) => [key, canvas.getContext('2d')])),
+};
+
+const bounds = {
+  dial: { width: 920, height: 520, dpr: 1 },
+  scope: { width: 920, height: 220, dpr: 1 },
+  waterfall: { width: 920, height: 220, dpr: 1 },
+  route: { width: 920, height: 180, dpr: 1 },
+  fx: Object.fromEntries(Object.keys(dom.fxViz).map((key) => [key, { width: 320, height: 112, dpr: 1 }])),
+};
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -194,6 +184,10 @@ function stationIndexFromDial() {
   return clamp(Math.round(state.dialValue * (state.stations.length - 1)), 0, state.stations.length - 1);
 }
 
+function presetById(id) {
+  return PRESETS.find((preset) => preset.id === id) || PRESETS[0];
+}
+
 function normalizeCountry(country) {
   return (country || 'unknown origin')
     .replace('The United States Of America', 'usa')
@@ -207,8 +201,44 @@ function niceTags(tags = '') {
     .split(',')
     .map((part) => part.trim())
     .filter(Boolean)
-    .slice(0, 2)
+    .slice(0, 3)
     .join(' / ');
+}
+
+function updateSliderLabels() {
+  for (const [name, input] of Object.entries(dom.sliders)) {
+    dom.values[name].textContent = input.value;
+  }
+}
+
+function updateFrequencyReadout() {
+  const freq = 87.5 + state.dialValue * 20.5;
+  dom.frequencyReadout.textContent = `${freq.toFixed(1)} MHz`;
+}
+
+function pushEvent(message, level = 'info') {
+  const stamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  state.eventLog.unshift({ stamp, message, level });
+  state.eventLog = state.eventLog.slice(0, 10);
+  renderEventLog();
+}
+
+function renderEventLog() {
+  dom.eventLog.innerHTML = '';
+  if (!state.eventLog.length) {
+    const empty = document.createElement('div');
+    empty.className = 'event-entry';
+    empty.innerHTML = '<span>00:00:00</span><strong>boot tape empty</strong>';
+    dom.eventLog.appendChild(empty);
+    return;
+  }
+
+  state.eventLog.forEach((entry) => {
+    const item = document.createElement('div');
+    item.className = 'event-entry';
+    item.innerHTML = `<span>${entry.stamp} · ${entry.level}</span><strong>${entry.message}</strong>`;
+    dom.eventLog.appendChild(item);
+  });
 }
 
 function setRuntime(text) {
@@ -224,10 +254,43 @@ function setFault(text) {
 function setStatus(text, mode = 'idle') {
   dom.statusText.textContent = text;
   dom.statusChip.textContent = mode;
-  dom.statusChip.classList.toggle('live', mode === 'live');
-  dom.statusChip.classList.toggle('error', mode === 'error');
+  dom.statusChip.dataset.mode = mode;
   dom.carrierBadge.textContent = mode;
-  syncTelemetry();
+}
+
+function qualityLabel(level) {
+  if (level > 0.72) return 'hot';
+  if (level > 0.48) return 'locked';
+  if (level > 0.22) return 'drifting';
+  return 'quiet';
+}
+
+function updateWorkflow() {
+  const preset = presetById(state.activePreset);
+  dom.workflowSteps.power.classList.toggle('active', state.powered);
+  dom.workflowSteps.preset.classList.toggle('active', state.activePreset !== 'manual');
+  dom.workflowSteps.tune.classList.toggle('active', state.powered && state.audio.currentMode !== 'silent');
+  dom.workflowSteps.shape.classList.toggle('active', state.powered && state.audio.currentMode !== 'silent' && preset.id !== 'manual');
+}
+
+function updateGuidance() {
+  const preset = presetById(state.activePreset);
+  if (state.isLoadingStations) {
+    dom.guidanceLine.textContent = 'cache loading. once armed, either scan for a carrier or punch a preset first.';
+    return;
+  }
+
+  if (!state.powered) {
+    dom.guidanceLine.textContent = 'receiver is cold. power it on, then lock a carrier before shaping ghosts.';
+    return;
+  }
+
+  if (state.audio.currentMode === 'silent') {
+    dom.guidanceLine.textContent = 'chain is armed. tune the dial, hit scan, or click a carrier from the field.';
+    return;
+  }
+
+  dom.guidanceLine.textContent = preset.guidance;
 }
 
 function syncTelemetry() {
@@ -247,13 +310,15 @@ function syncTelemetry() {
   dom.lockState.textContent = state.powered ? state.audio.currentMode : 'off-air';
   dom.fallbackMode.textContent = state.usingFallback ? 'curated fallback' : 'live api';
   dom.sourceBadge.textContent = state.stationSource;
-  dom.runtimeStatus.textContent = state.currentRuntime;
-  dom.faultLine.textContent = state.lastFault;
   dom.hostBadge.textContent = host;
   dom.routeSource.textContent = station ? station.name : 'live station';
-  dom.routeProxy.textContent = state.audio.currentMode === 'processed' ? 'proxy locked' : state.audio.currentMode === 'raw' ? 'bypassed' : 'awaiting lock';
-  dom.routeOutput.textContent = state.audio.currentMode === 'silent' ? 'silent bus' : state.audio.currentMode === 'raw' ? 'raw output' : 'fx chain live';
+  dom.routeSourceReadout.textContent = station ? `field around ${station.name}` : 'nearby frequencies';
+  dom.routeProxy.textContent = state.audio.currentMode === 'processed' ? 'proxy locked' : state.audio.currentMode === 'raw' ? 'direct fallback' : 'awaiting lock';
+  dom.routeOutput.textContent = state.audio.currentMode === 'processed' ? 'fx chain live' : state.audio.currentMode === 'raw' ? 'raw output' : 'silent bus';
   dom.routeRecovery.textContent = state.recoveries ? `${state.recoveries} recoveries` : 'ready';
+  dom.signalQuality.textContent = qualityLabel(state.lastComputedLevel || 0);
+  updateWorkflow();
+  updateGuidance();
 }
 
 function setStationDisplay(station, note = '') {
@@ -264,86 +329,105 @@ function setStationDisplay(station, note = '') {
   }
 
   dom.stationName.textContent = station.name;
-  const parts = [
-    normalizeCountry(station.country),
-    station.codec,
-    station.bitrate ? `${station.bitrate} kbps` : '',
-  ];
+  const parts = [normalizeCountry(station.country), station.codec, station.bitrate ? `${station.bitrate} kbps` : ''];
   const tags = niceTags(station.tags);
   if (tags) parts.push(tags);
   if (note) parts.push(note);
   dom.stationMeta.textContent = parts.filter(Boolean).join(' · ');
 }
 
-function updateSliderLabels() {
-  for (const [name, input] of Object.entries(dom.sliders)) {
-    dom.values[name].textContent = input.value;
-  }
-}
-
-function updateFrequencyReadout() {
-  const freq = 87.5 + state.dialValue * 20.5;
-  dom.frequencyReadout.textContent = `${freq.toFixed(1)} MHz`;
-}
-
 function resizeCanvas(canvas, ctx, target) {
   const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
-  target.width = Math.round(rect.width);
-  target.height = Math.round(rect.height);
+  target.width = Math.max(1, Math.round(rect.width));
+  target.height = Math.max(1, Math.round(rect.height));
   target.dpr = dpr;
   canvas.width = Math.max(1, Math.round(rect.width * dpr));
   canvas.height = Math.max(1, Math.round(rect.height * dpr));
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
+function applyPreset(id, { silent = false } = {}) {
+  const preset = presetById(id);
+  state.activePreset = preset.id;
+  dom.activePresetName.textContent = preset.name;
+  dom.presetSummary.textContent = preset.summary;
+
+  if (preset.values) {
+    for (const [name, value] of Object.entries(preset.values)) {
+      dom.sliders[name].value = String(value);
+    }
+    updateSliderLabels();
+    applyFx();
+  }
+
+  renderPresetList();
+  updateGuidance();
+  updateWorkflow();
+  if (!silent) pushEvent(`scene loaded → ${preset.name}`, 'preset');
+}
+
+function renderPresetList() {
+  dom.presetList.innerHTML = '';
+  PRESETS.forEach((preset) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `preset-btn${preset.id === state.activePreset ? ' active' : ''}`;
+    button.innerHTML = `<strong>${preset.name}</strong><small>${preset.summary}</small>`;
+    button.addEventListener('click', () => applyPreset(preset.id));
+    dom.presetList.appendChild(button);
+  });
+}
+
 function renderBandmap() {
-  const count = Math.min(8, state.stations.length);
-  dom.bandmapCount.textContent = `${state.stations.length} loaded`;
   dom.bandmapList.innerHTML = '';
+  dom.bandmapCount.textContent = `${state.stations.length} loaded`;
 
+  const count = Math.min(12, state.stations.length);
   if (!count) return;
-
-  const start = clamp(state.stationIndex - 3, 0, Math.max(0, state.stations.length - count));
+  const start = clamp(state.stationIndex - 4, 0, Math.max(0, state.stations.length - count));
   const subset = state.stations.slice(start, start + count);
 
   subset.forEach((station, offset) => {
     const index = start + offset;
-    const item = document.createElement('button');
-    item.type = 'button';
-    item.className = `bandmap-item${index === state.stationIndex ? ' active' : ''}`;
-    item.innerHTML = `
-      <header>
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `bandmap-item${index === state.stationIndex ? ' active' : ''}`;
+    const mhz = (87.5 + (index / Math.max(1, state.stations.length - 1)) * 20.5).toFixed(1);
+    const cooling = isStationCoolingDown(station);
+    button.innerHTML = `
+      <div class="bandmap-head">
         <strong>${station.name}</strong>
-        <small>${(87.5 + (index / Math.max(1, state.stations.length - 1)) * 20.5).toFixed(1)} mhz</small>
-      </header>
-      <small>${[normalizeCountry(station.country), station.codec, station.bitrate ? `${station.bitrate} kbps` : '', niceTags(station.tags)].filter(Boolean).join(' · ')}</small>
+        <span>${mhz} mhz</span>
+      </div>
+      <div class="bandmap-meta">${[normalizeCountry(station.country), station.codec, station.bitrate ? `${station.bitrate} kbps` : '', niceTags(station.tags)].filter(Boolean).join(' · ')}</div>
+      <div class="bandmap-note">${cooling ? 'cooldown / unstable carrier' : index === state.stationIndex ? 'selected carrier' : 'click to retune'}</div>
     `;
-    item.addEventListener('click', () => {
+    button.addEventListener('click', () => {
       state.stationIndex = index;
       state.dialValue = index / Math.max(1, state.stations.length - 1);
       updateFrequencyReadout();
       setStationDisplay(station, state.powered ? 'retuning…' : 'queued frequency');
-      syncTelemetry();
       renderBandmap();
-      if (state.powered) queueTune(true, 'manual-bandmap');
+      syncTelemetry();
+      pushEvent(`carrier selected → ${station.name}`, 'field');
+      if (state.powered) queueTune(true, 'field-select');
     });
-    dom.bandmapList.appendChild(item);
+    dom.bandmapList.appendChild(button);
   });
 }
 
 function setDialValue(next, { shouldTune = true } = {}) {
   state.dialValue = clamp(next, 0, 1);
   updateFrequencyReadout();
-
   const nextIndex = stationIndexFromDial();
   if (nextIndex !== state.stationIndex) {
     state.stationIndex = nextIndex;
     setStationDisplay(currentStation(), state.powered ? 'retuning…' : 'queued frequency');
     renderBandmap();
+    syncTelemetry();
     if (state.powered && shouldTune) queueTune(false, 'manual-dial');
   }
-  syncTelemetry();
 }
 
 function makeCurve(amount) {
@@ -357,7 +441,7 @@ function makeCurve(amount) {
   return curve;
 }
 
-function buildImpulseResponse(ctx, duration = 2.5, decay = 2) {
+function buildImpulseResponse(ctx, duration = 2.4, decay = 2) {
   const length = Math.floor(ctx.sampleRate * duration);
   const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
   for (let channel = 0; channel < impulse.numberOfChannels; channel += 1) {
@@ -372,9 +456,7 @@ function buildImpulseResponse(ctx, duration = 2.5, decay = 2) {
 function buildNoiseBuffer(ctx) {
   const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
   const data = buffer.getChannelData(0);
-  for (let i = 0; i < data.length; i += 1) {
-    data[i] = Math.random() * 2 - 1;
-  }
+  for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1;
   return buffer;
 }
 
@@ -400,7 +482,7 @@ async function ensureAudio() {
   chain.bandpass.Q.value = 1.7;
 
   chain.dry = ctx.createGain();
-  chain.dry.gain.value = 0.7;
+  chain.dry.gain.value = 0.72;
 
   chain.delay = ctx.createDelay(0.9);
   chain.delay.delayTime.value = 0.085;
@@ -430,7 +512,8 @@ async function ensureAudio() {
   chain.staticGain.gain.value = 0;
 
   chain.analyser = ctx.createAnalyser();
-  chain.analyser.fftSize = 128;
+  chain.analyser.fftSize = 512;
+  chain.analyser.smoothingTimeConstant = 0.86;
 
   chain.bpLfo = ctx.createOscillator();
   chain.bpLfo.type = 'sine';
@@ -489,10 +572,12 @@ async function ensureAudio() {
   state.audio.chain = chain;
   state.audio.analyser = chain.analyser;
   state.audio.meterData = new Uint8Array(chain.analyser.frequencyBinCount);
+  state.audio.timeData = new Uint8Array(chain.analyser.fftSize);
 
   applyFx();
   setNoiseProfile('idle');
   await ctx.resume();
+  pushEvent('audio chain initialized', 'audio');
   return state.audio;
 }
 
@@ -509,34 +594,36 @@ function setNoiseProfile(mode = 'idle') {
     error: 0.01 + staticAmount * 0.03,
   };
   chain.staticGain.gain.setTargetAtTime(targets[mode] ?? targets.idle, now, 0.08);
-  dom.meterDetail.textContent = `${mode} / static ${Math.round(staticAmount * 100)}%`;
 }
 
 function applyFx() {
   const { ctx, chain } = state.audio;
-  if (!ctx || !chain.master) return;
-  const now = ctx.currentTime;
-  const decay = sliderValue('decay');
-  const wobble = sliderValue('wobble');
-  const dirt = sliderValue('dirt');
-  const voidAmount = sliderValue('void');
+  if (ctx && chain.master) {
+    const now = ctx.currentTime;
+    const decay = sliderValue('decay');
+    const wobble = sliderValue('wobble');
+    const dirt = sliderValue('dirt');
+    const voidAmount = sliderValue('void');
 
-  chain.delayFeedback.gain.setTargetAtTime(0.04 + decay * 0.42, now, 0.06);
-  chain.delayWet.gain.setTargetAtTime(0.08 + decay * 0.52, now, 0.06);
-  chain.dry.gain.setTargetAtTime(0.85 - decay * 0.18, now, 0.06);
+    chain.delayFeedback.gain.setTargetAtTime(0.04 + decay * 0.42, now, 0.06);
+    chain.delayWet.gain.setTargetAtTime(0.08 + decay * 0.52, now, 0.06);
+    chain.dry.gain.setTargetAtTime(0.85 - decay * 0.18, now, 0.06);
 
-  chain.wowLfoGain.gain.setTargetAtTime(0.0001 + wobble * 0.0048, now, 0.06);
-  chain.flutterLfoGain.gain.setTargetAtTime(0.00005 + wobble * 0.0012, now, 0.06);
-  chain.bpLfoGain.gain.setTargetAtTime(40 + wobble * 260, now, 0.06);
-  chain.bandpass.Q.setTargetAtTime(1.35 + wobble * 1.65, now, 0.06);
+    chain.wowLfoGain.gain.setTargetAtTime(0.0001 + wobble * 0.0048, now, 0.06);
+    chain.flutterLfoGain.gain.setTargetAtTime(0.00005 + wobble * 0.0012, now, 0.06);
+    chain.bpLfoGain.gain.setTargetAtTime(40 + wobble * 260, now, 0.06);
+    chain.bandpass.Q.setTargetAtTime(1.35 + wobble * 1.65, now, 0.06);
 
-  chain.shaper.curve = makeCurve(dirt * 0.85);
-  chain.post.gain.setTargetAtTime(0.86 - dirt * 0.08, now, 0.06);
+    chain.shaper.curve = makeCurve(dirt * 0.85);
+    chain.post.gain.setTargetAtTime(0.86 - dirt * 0.08, now, 0.06);
 
-  chain.reverbWet.gain.setTargetAtTime(0.06 + voidAmount * 0.5, now, 0.06);
-  chain.reverbDry.gain.setTargetAtTime(0.96 - voidAmount * 0.22, now, 0.06);
+    chain.reverbWet.gain.setTargetAtTime(0.06 + voidAmount * 0.5, now, 0.06);
+    chain.reverbDry.gain.setTargetAtTime(0.96 - voidAmount * 0.22, now, 0.06);
 
-  setNoiseProfile(state.audio.currentMode === 'processed' ? 'processed' : state.audio.currentMode === 'raw' ? 'raw' : 'idle');
+    setNoiseProfile(state.audio.currentMode === 'processed' ? 'processed' : state.audio.currentMode === 'raw' ? 'raw' : 'idle');
+  }
+
+  drawAllFxViz(performance.now());
 }
 
 function clearRuntimeWatchers() {
@@ -547,9 +634,7 @@ function clearRuntimeWatchers() {
 function disconnectCurrentSource() {
   clearRuntimeWatchers();
   if (state.audio.sourceNode) {
-    try {
-      state.audio.sourceNode.disconnect();
-    } catch {}
+    try { state.audio.sourceNode.disconnect(); } catch {}
     state.audio.sourceNode = null;
   }
 }
@@ -713,6 +798,7 @@ async function tryProxyLoad(station, token) {
       setStatus('carrier locked through proxy. effects active.', 'live');
       setRuntime('processed chain stable');
       setStationDisplay(station, 'processed');
+      pushEvent(`proxy lock acquired → ${station.name}`, 'lock');
       syncTelemetry();
       return true;
     } catch (error) {
@@ -735,6 +821,7 @@ async function tryDirectLoad(station, token) {
   setStatus('station alive, but source refused processing. raw path only.', 'live');
   setRuntime('raw fallback active');
   setStationDisplay(station, 'raw fallback');
+  pushEvent(`direct fallback active → ${station.name}`, 'fallback');
   syncTelemetry();
   return true;
 }
@@ -749,6 +836,7 @@ async function tuneToCurrentStation(reason = 'manual') {
   setStatus(`retuning carrier… ${reason}`, 'idle');
   setRuntime('locking carrier');
   setStationDisplay(station, 'retuning…');
+  pushEvent(`retune requested → ${station.name} (${reason})`, 'tune');
 
   try {
     const processed = await tryProxyLoad(station, token);
@@ -778,9 +866,10 @@ async function recoverCurrentStation(reason = 'carrier fault') {
   state.recoveries += 1;
   markCooldown(station, reason);
   setFault(`${reason} · ${station.name}`);
-  setStatus(`carrier dropped. hopping around the graveyard…`, 'error');
+  setStatus('carrier dropped. hopping around the graveyard…', 'error');
   setRuntime('searching next viable station');
   setNoiseProfile('error');
+  pushEvent(`recovery hop → ${station.name} (${reason})`, 'recover');
 
   const nextIndex = findNextViableIndex(state.stationIndex, 1);
   if (nextIndex === state.stationIndex && isStationCoolingDown(station)) {
@@ -815,8 +904,9 @@ async function powerOn() {
   dom.powerBtn.classList.add('live');
   await ensureAudio();
   state.audio.chain.master.gain.setTargetAtTime(0.88, state.audio.ctx.currentTime, 0.35);
-  setStatus('carrier locked. bring up the ghosts.', 'live');
+  setStatus('carrier chain armed. bring up the ghosts.', 'live');
   setRuntime('warming signal chain');
+  pushEvent('receiver armed', 'power');
   syncTelemetry();
   queueTune(true, 'power-on');
 }
@@ -830,6 +920,7 @@ function powerOff() {
   setStatus('receiver sleeping.', 'idle');
   setRuntime('receiver sleeping');
   setStationDisplay(currentStation(), 'standby');
+  pushEvent('receiver powered down', 'power');
   syncTelemetry();
 }
 
@@ -856,6 +947,7 @@ function scanRandom() {
   updateFrequencyReadout();
   renderBandmap();
   setStationDisplay(currentStation(), state.powered ? 'retuning…' : 'queued frequency');
+  pushEvent(`blind scan landed on → ${currentStation()?.name || 'unknown'}`, 'scan');
   syncTelemetry();
   if (state.powered) queueTune(true, 'scan');
 }
@@ -863,6 +955,7 @@ function scanRandom() {
 async function fetchStations() {
   setStatus('scanning radio-browser mirrors…', 'idle');
   setRuntime('building station cache');
+  pushEvent('scanning station mirrors', 'boot');
   try {
     const response = await fetch('/api/stations');
     if (!response.ok) throw new Error(`stations endpoint returned ${response.status}`);
@@ -875,6 +968,7 @@ async function fetchStations() {
     setStationDisplay(currentStation(), `${state.stations.length} frequencies cached`);
     setStatus(`${state.stations.length} stations loaded from ${payload.source}. tune when ready.`, 'idle');
     setRuntime('station cache ready');
+    pushEvent(`station cache ready → ${state.stations.length} carriers`, 'boot');
     renderBandmap();
     syncTelemetry();
   } catch (error) {
@@ -887,131 +981,290 @@ async function fetchStations() {
     setStationDisplay(currentStation(), 'offline fallback set');
     setStatus('radio-browser choked. using local fallback stations instead.', 'error');
     setRuntime('fallback cache ready');
+    pushEvent('radio-browser failed. fallback station pack armed.', 'error');
     renderBandmap();
     syncTelemetry();
   }
 }
 
+function sampleAudio(now) {
+  if (state.audio.analyser && state.audio.meterData && state.audio.timeData && state.powered) {
+    state.audio.analyser.getByteFrequencyData(state.audio.meterData);
+    state.audio.analyser.getByteTimeDomainData(state.audio.timeData);
+    let sum = 0;
+    for (const value of state.audio.meterData) sum += value;
+    const level = sum / (state.audio.meterData.length * 255);
+    state.lastComputedLevel = level;
+    state.analyserHistory.push([...state.audio.meterData]);
+    if (state.analyserHistory.length > bounds.waterfall.height) state.analyserHistory.shift();
+    dom.meterDetail.textContent = `${state.audio.currentMode} / ${Math.round(level * 100)}% field energy`;
+  } else {
+    const idle = 0.03 + 0.02 * (0.5 + 0.5 * Math.sin((now - state.animationStart) * 0.0008));
+    state.lastComputedLevel = idle;
+    dom.meterDetail.textContent = 'no analyser yet';
+  }
+}
+
 function drawDial(now) {
-  const { width, height } = dialBounds;
-  dialCtx.clearRect(0, 0, width, height);
+  const ctx = ctxs.dial;
+  const { width, height } = bounds.dial;
+  ctx.clearRect(0, 0, width, height);
 
   const cx = width * 0.5;
-  const cy = height * 0.75;
-  const radius = Math.min(width * 0.42, height * 0.6);
+  const cy = height * 0.73;
+  const radius = Math.min(width * 0.41, height * 0.6);
   const t = (now - state.animationStart) / 1000;
   const glow = state.powered ? 0.55 + 0.45 * Math.sin(t * 2.1) : 0.12;
   const stationDensity = Math.max(24, Math.min(64, state.stations.length || 48));
 
-  const bg = dialCtx.createRadialGradient(cx, cy, radius * 0.12, cx, cy, radius * 1.08);
-  bg.addColorStop(0, 'rgba(136,204,255,0.12)');
-  bg.addColorStop(1, 'rgba(136,204,255,0)');
-  dialCtx.fillStyle = bg;
-  dialCtx.fillRect(0, 0, width, height);
+  const bg = ctx.createRadialGradient(cx, cy, radius * 0.1, cx, cy, radius * 1.15);
+  bg.addColorStop(0, 'rgba(80, 164, 255, 0.18)');
+  bg.addColorStop(0.35, 'rgba(60, 95, 140, 0.10)');
+  bg.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, width, height);
 
-  dialCtx.beginPath();
-  dialCtx.arc(cx, cy, radius, Math.PI, 0, false);
-  dialCtx.strokeStyle = 'rgba(188, 208, 255, 0.26)';
-  dialCtx.lineWidth = 2;
-  dialCtx.stroke();
+  ctx.strokeStyle = 'rgba(170, 198, 245, 0.08)';
+  for (let i = 0; i < 11; i += 1) {
+    const y = 34 + i * ((height - 68) / 10);
+    ctx.beginPath();
+    ctx.moveTo(24, y);
+    ctx.lineTo(width - 24, y);
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, Math.PI, 0, false);
+  ctx.strokeStyle = 'rgba(188, 208, 255, 0.25)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius - 44, Math.PI, 0, false);
+  ctx.strokeStyle = 'rgba(129, 154, 205, 0.12)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
 
   for (let i = 0; i <= stationDensity; i += 1) {
     const angle = Math.PI + (i / stationDensity) * Math.PI;
     const major = i % 5 === 0;
-    const inner = radius - (major ? 38 : 18);
+    const inner = radius - (major ? 46 : 22);
     const outer = radius + (major ? 9 : 4);
-    dialCtx.beginPath();
-    dialCtx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
-    dialCtx.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
-    dialCtx.strokeStyle = major ? 'rgba(216, 228, 255, 0.66)' : 'rgba(145, 164, 209, 0.24)';
-    dialCtx.lineWidth = major ? 1.5 : 0.8;
-    dialCtx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
+    ctx.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
+    ctx.strokeStyle = major ? 'rgba(220, 234, 255, 0.66)' : 'rgba(145, 164, 209, 0.22)';
+    ctx.lineWidth = major ? 1.5 : 0.8;
+    ctx.stroke();
   }
 
   const left = 87.5;
   const step = 20.5 / 5;
-  dialCtx.fillStyle = 'rgba(194, 207, 240, 0.82)';
-  dialCtx.font = '12px IBM Plex Mono';
-  dialCtx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(200, 214, 245, 0.82)';
+  ctx.font = '12px IBM Plex Mono';
+  ctx.textAlign = 'center';
   for (let i = 0; i <= 5; i += 1) {
-    const labelAngle = Math.PI + (i / 5) * Math.PI;
-    dialCtx.fillText(`${(left + step * i).toFixed(1)}`, cx + Math.cos(labelAngle) * (radius - 58), cy + Math.sin(labelAngle) * (radius - 58) + 4);
+    const angle = Math.PI + (i / 5) * Math.PI;
+    ctx.fillText(`${(left + step * i).toFixed(1)}`, cx + Math.cos(angle) * (radius - 66), cy + Math.sin(angle) * (radius - 66) + 4);
   }
 
   const idleDrift = !state.powered ? Math.sin(t * 0.3 + state.driftPhase) * 0.0015 : 0;
   const needleAngle = Math.PI + (state.dialValue + idleDrift) * Math.PI;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(needleAngle) * (radius - 20), cy + Math.sin(needleAngle) * (radius - 20));
+  ctx.strokeStyle = `rgba(109, 197, 255, ${0.24 + glow * 0.4})`;
+  ctx.lineWidth = 12;
+  ctx.stroke();
 
-  dialCtx.beginPath();
-  dialCtx.moveTo(cx, cy);
-  dialCtx.lineTo(cx + Math.cos(needleAngle) * (radius - 22), cy + Math.sin(needleAngle) * (radius - 22));
-  dialCtx.strokeStyle = `rgba(136, 204, 255, ${0.2 + glow * 0.35})`;
-  dialCtx.lineWidth = 10;
-  dialCtx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(needleAngle) * (radius - 22), cy + Math.sin(needleAngle) * (radius - 22));
+  ctx.strokeStyle = state.powered ? '#ecf4ff' : 'rgba(145, 164, 209, 0.42)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
 
-  dialCtx.beginPath();
-  dialCtx.moveTo(cx, cy);
-  dialCtx.lineTo(cx + Math.cos(needleAngle) * (radius - 24), cy + Math.sin(needleAngle) * (radius - 24));
-  dialCtx.strokeStyle = state.powered ? '#e4efff' : 'rgba(145, 164, 209, 0.42)';
-  dialCtx.lineWidth = 2;
-  dialCtx.stroke();
-
-  dialCtx.beginPath();
-  dialCtx.arc(cx, cy, 7, 0, Math.PI * 2);
-  dialCtx.fillStyle = state.powered ? '#ecf4ff' : 'rgba(145, 164, 209, 0.6)';
-  dialCtx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+  ctx.fillStyle = state.powered ? '#eff6ff' : 'rgba(145, 164, 209, 0.5)';
+  ctx.fill();
 
   const station = currentStation();
   if (station) {
-    dialCtx.fillStyle = 'rgba(216, 228, 255, 0.8)';
-    dialCtx.font = '13px IBM Plex Mono';
-    dialCtx.fillText(station.name.slice(0, 38), cx, cy + 38);
+    ctx.fillStyle = 'rgba(218, 232, 255, 0.84)';
+    ctx.font = '600 13px IBM Plex Mono';
+    ctx.fillText(station.name.slice(0, 44), cx, cy + 48);
   }
 }
 
-function drawMeter(now) {
-  const { width, height } = meterBounds;
-  meterCtx.clearRect(0, 0, width, height);
-  meterCtx.fillStyle = 'rgba(255,255,255,0.02)';
-  meterCtx.fillRect(0, 0, width, height);
+function drawScope(now) {
+  const ctx = ctxs.scope;
+  const { width, height } = bounds.scope;
+  ctx.clearRect(0, 0, width, height);
 
-  const mid = height * 0.54;
-  meterCtx.strokeStyle = 'rgba(255,255,255,0.06)';
-  meterCtx.lineWidth = 1;
-  meterCtx.beginPath();
-  meterCtx.moveTo(0, mid);
-  meterCtx.lineTo(width, mid);
-  meterCtx.stroke();
+  ctx.fillStyle = 'rgba(4, 6, 8, 0.96)';
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = 'rgba(160, 188, 232, 0.08)';
+  for (let i = 0; i < 8; i += 1) {
+    const y = 18 + i * ((height - 36) / 7);
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+  }
 
-  let level = 0;
-  if (state.audio.analyser && state.audio.meterData && state.powered) {
-    state.audio.analyser.getByteFrequencyData(state.audio.meterData);
-    let sum = 0;
-    for (const value of state.audio.meterData) sum += value;
-    level = sum / (state.audio.meterData.length * 255);
-    state.lastLevel += (level - state.lastLevel) * 0.16;
+  const mid = height * 0.5;
+  ctx.strokeStyle = 'rgba(211, 227, 255, 0.16)';
+  ctx.beginPath();
+  ctx.moveTo(0, mid);
+  ctx.lineTo(width, mid);
+  ctx.stroke();
+
+  ctx.beginPath();
+  if (state.audio.timeData && state.powered) {
+    const data = state.audio.timeData;
+    for (let i = 0; i < data.length; i += 1) {
+      const x = (i / (data.length - 1)) * width;
+      const y = (data[i] / 255) * height;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
   } else {
-    const t = (now - state.animationStart) / 1000;
-    state.lastLevel = 0.03 + 0.02 * (0.5 + 0.5 * Math.sin(t * 0.8));
+    for (let i = 0; i < 180; i += 1) {
+      const x = (i / 179) * width;
+      const y = mid + Math.sin(i * 0.19 + now * 0.004) * 12 + Math.sin(i * 0.05 + now * 0.001) * 6;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+  }
+  ctx.strokeStyle = 'rgba(111, 208, 255, 0.9)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function drawWaterfall() {
+  const ctx = ctxs.waterfall;
+  const { width, height } = bounds.waterfall;
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = 'rgba(4, 6, 8, 0.98)';
+  ctx.fillRect(0, 0, width, height);
+
+  const history = state.analyserHistory;
+  if (!history.length) {
+    ctx.fillStyle = 'rgba(145, 164, 209, 0.35)';
+    ctx.font = '12px IBM Plex Mono';
+    ctx.fillText('waterfall waiting for carrier', 16, 24);
+    return;
   }
 
-  const bars = 46;
-  const gap = 3;
-  const barWidth = (width - gap * (bars - 1)) / bars;
-  for (let i = 0; i < bars; i += 1) {
-    const phase = (i / bars) * Math.PI * 3;
-    const motion = 0.62 + 0.38 * Math.sin(now * 0.002 + phase);
-    const magnitude = Math.max(0.05, state.lastLevel * motion);
-    const barHeight = magnitude * (height * 0.88);
-    const x = i * (barWidth + gap);
-    const y = mid - barHeight * 0.5;
-    meterCtx.fillStyle = state.powered ? 'rgba(136, 204, 255, 0.9)' : 'rgba(145, 164, 209, 0.34)';
-    meterCtx.fillRect(x, y, barWidth, barHeight);
+  const rows = Math.min(height, history.length);
+  const bins = history[history.length - 1].length;
+  for (let row = 0; row < rows; row += 1) {
+    const data = history[history.length - 1 - row];
+    for (let i = 0; i < bins; i += 1) {
+      const x = (i / bins) * width;
+      const w = Math.ceil(width / bins) + 1;
+      const v = data[i] / 255;
+      const hue = 205 - v * 48;
+      const light = 6 + v * 63;
+      ctx.fillStyle = `hsla(${hue}, 95%, ${light}%, ${0.18 + v * 0.82})`;
+      ctx.fillRect(x, row, w, 1.15);
+    }
   }
+}
+
+function drawRoute(now) {
+  const ctx = ctxs.route;
+  const { width, height } = bounds.route;
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = 'rgba(4, 6, 8, 0.97)';
+  ctx.fillRect(0, 0, width, height);
+
+  const nodes = [
+    { x: width * 0.14, y: height * 0.5, label: 'src' },
+    { x: width * 0.38, y: height * 0.35, label: 'proxy' },
+    { x: width * 0.38, y: height * 0.68, label: 'raw' },
+    { x: width * 0.64, y: height * 0.5, label: 'fx' },
+    { x: width * 0.86, y: height * 0.5, label: 'out' },
+  ];
+  const pulse = state.powered ? 0.5 + 0.5 * Math.sin(now * 0.004) : 0.14;
+
+  ctx.strokeStyle = 'rgba(126, 155, 208, 0.18)';
+  ctx.lineWidth = 2;
+  [[0,1],[0,2],[1,3],[2,4],[3,4]].forEach(([a,b]) => {
+    ctx.beginPath();
+    ctx.moveTo(nodes[a].x, nodes[a].y);
+    ctx.lineTo(nodes[b].x, nodes[b].y);
+    ctx.stroke();
+  });
+
+  if (state.powered) {
+    const sourcePath = state.audio.currentMode === 'raw' ? [0,2,4] : [0,1,3,4];
+    ctx.strokeStyle = `rgba(110, 205, 255, ${0.38 + pulse * 0.42})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(nodes[sourcePath[0]].x, nodes[sourcePath[0]].y);
+    for (let i = 1; i < sourcePath.length; i += 1) ctx.lineTo(nodes[sourcePath[i]].x, nodes[sourcePath[i]].y);
+    ctx.stroke();
+  }
+
+  ctx.font = '11px IBM Plex Mono';
+  ctx.textAlign = 'center';
+  nodes.forEach((node, index) => {
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, index === 4 ? 10 : 8, 0, Math.PI * 2);
+    ctx.fillStyle = index === 4 ? `rgba(158, 236, 255, ${0.2 + pulse * 0.55})` : 'rgba(170, 196, 236, 0.34)';
+    ctx.fill();
+    ctx.fillStyle = 'rgba(214, 229, 255, 0.78)';
+    ctx.fillText(node.label, node.x, node.y - 16);
+  });
+}
+
+function drawFxViz(name, now) {
+  const ctx = ctxs.fx[name];
+  const { width, height } = bounds.fx[name];
+  const amount = sliderValue(name);
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = 'rgba(5, 7, 10, 0.98)';
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = 'rgba(152, 177, 223, 0.08)';
+  for (let i = 0; i < 5; i += 1) {
+    const y = 14 + i * ((height - 28) / 4);
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+  }
+
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < 110; i += 1) {
+    const x = (i / 109) * width;
+    let y = height * 0.5;
+    if (name === 'decay') y += Math.sin(i * 0.23 + now * 0.001) * 16 * (1 - i / 110) * (0.4 + amount);
+    if (name === 'wobble') y += Math.sin(i * (0.12 + amount * 0.22) + now * 0.004) * (8 + amount * 24);
+    if (name === 'dirt') y += Math.sign(Math.sin(i * 0.2 + now * 0.002)) * (2 + amount * 18) + Math.sin(i * 0.58) * 4;
+    if (name === 'void') y += Math.sin(i * 0.09 + now * 0.0015) * 10 + (i / 109) * amount * 30 - amount * 15;
+    if (name === 'static') y += (Math.sin(i * 0.65 + now * 0.012) + Math.cos(i * 0.43 + now * 0.009)) * amount * 10;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = 'rgba(113, 206, 255, 0.88)';
+  ctx.stroke();
+}
+
+function drawAllFxViz(now) {
+  Object.keys(dom.fxViz).forEach((name) => drawFxViz(name, now));
 }
 
 function animate(now) {
+  sampleAudio(now);
   drawDial(now);
-  drawMeter(now);
+  drawScope(now);
+  drawWaterfall();
+  drawRoute(now);
+  drawAllFxViz(now);
+  syncTelemetry();
   requestAnimationFrame(animate);
 }
 
@@ -1027,6 +1280,7 @@ function bindEvents() {
       console.error(error);
       setStatus('power-up failed. browser probably blocked audio.', 'error');
       setRuntime('audio bootstrap failed');
+      pushEvent('power-up failed', 'error');
     });
   });
 
@@ -1053,13 +1307,11 @@ function bindEvents() {
       togglePower().catch(console.error);
       return;
     }
-
     if (event.code === 'ArrowRight' || event.code === 'ArrowDown') {
       event.preventDefault();
       setDialValue(state.dialValue + 0.012);
       return;
     }
-
     if (event.code === 'ArrowLeft' || event.code === 'ArrowUp') {
       event.preventDefault();
       setDialValue(state.dialValue - 0.012);
@@ -1069,13 +1321,22 @@ function bindEvents() {
   for (const [name, input] of Object.entries(dom.sliders)) {
     input.addEventListener('input', () => {
       dom.values[name].textContent = input.value;
+      if (state.activePreset !== 'manual') {
+        state.activePreset = 'manual';
+        dom.activePresetName.textContent = 'manual';
+        dom.presetSummary.textContent = 'manual override. you are now steering the damage yourself.';
+        renderPresetList();
+      }
       applyFx();
     });
   }
 
   const onResize = () => {
-    resizeCanvas(dom.dialCanvas, dialCtx, dialBounds);
-    resizeCanvas(dom.meterCanvas, meterCtx, meterBounds);
+    resizeCanvas(dom.dialCanvas, ctxs.dial, bounds.dial);
+    resizeCanvas(dom.scopeCanvas, ctxs.scope, bounds.scope);
+    resizeCanvas(dom.waterfallCanvas, ctxs.waterfall, bounds.waterfall);
+    resizeCanvas(dom.routeCanvas, ctxs.route, bounds.route);
+    Object.entries(dom.fxViz).forEach(([name, canvas]) => resizeCanvas(canvas, ctxs.fx[name], bounds.fx[name]));
   };
 
   window.addEventListener('resize', onResize);
@@ -1085,6 +1346,9 @@ function bindEvents() {
 async function init() {
   updateSliderLabels();
   updateFrequencyReadout();
+  renderEventLog();
+  renderPresetList();
+  applyPreset('manual', { silent: true });
   syncTelemetry();
   bindEvents();
   await fetchStations();
@@ -1095,4 +1359,5 @@ init().catch((error) => {
   console.error(error);
   setStatus('initialization failed. something is cursed.', 'error');
   setRuntime('boot sequence failed');
+  pushEvent('initialization failed', 'error');
 });

@@ -4,212 +4,279 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Haunted Radio</title>
-  <meta name="description" content="A phreaky live-radio receiver that drags real stations through drift, delay, bloom and decay.">
+  <meta name="description" content="A live phreak receiver for dragging real radio through drift, decay, phantom tails, spectral fog, and haunted instrumentation.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div class="scanlines" aria-hidden="true"></div>
-  <div class="grain" aria-hidden="true"></div>
+  <div class="noise-layer" aria-hidden="true"></div>
+  <div class="scan-layer" aria-hidden="true"></div>
 
-  <main class="shell">
-    <header class="hero">
-      <div class="eyebrow"><span class="led led-amber"></span> spectral tuner / fail-soft radio workstation / live proxy path</div>
-      <h1>haunted radio</h1>
-      <p class="lede">real stations. unstable carriers. tape wobble, bloom, depth and controlled rot. built like an instrument, not a novelty prop.</p>
+  <main class="rack-shell">
+    <header class="masthead panel-chassis">
+      <div class="masthead-left">
+        <div class="device-tag"><span class="led led-amber"></span> field receiver / proxy-locked / spectral rack mk.ii</div>
+        <h1>haunted radio</h1>
+        <p class="masthead-copy">a coherent machine this time. power the receiver, choose a spectral scene, lock a carrier, then drag the stream through drift, void, dirt, and controlled damage.</p>
+      </div>
+      <div class="masthead-right">
+        <div class="status-block status-dominant">
+          <span class="status-label">system state</span>
+          <strong id="statusChip">booting</strong>
+          <p id="statusText">initializing station cache…</p>
+        </div>
+        <div class="status-grid" aria-label="receiver status rail">
+          <div class="status-block">
+            <span class="status-label">source</span>
+            <strong id="sourceBadge">booting</strong>
+          </div>
+          <div class="status-block">
+            <span class="status-label">path</span>
+            <strong id="pathBadge">silent</strong>
+          </div>
+          <div class="status-block">
+            <span class="status-label">carrier</span>
+            <strong id="carrierBadge">standby</strong>
+          </div>
+          <div class="status-block">
+            <span class="status-label">recoveries</span>
+            <strong id="recoveryBadge">0</strong>
+          </div>
+        </div>
+      </div>
     </header>
 
-    <section class="topline" aria-label="receiver status rail">
-      <div class="rail-card">
-        <span>source</span>
-        <strong id="sourceBadge">booting</strong>
+    <section class="workflow-strip panel-chassis" aria-label="operating flow">
+      <div class="workflow-step" id="stepPower">
+        <span class="workflow-index">01</span>
+        <div>
+          <strong>arm receiver</strong>
+          <p>bring the audio chain online</p>
+        </div>
       </div>
-      <div class="rail-card">
-        <span>path</span>
-        <strong id="pathBadge">silent</strong>
+      <div class="workflow-step" id="stepPreset">
+        <span class="workflow-index">02</span>
+        <div>
+          <strong>pick a scene</strong>
+          <p>load a preset or scan blind</p>
+        </div>
       </div>
-      <div class="rail-card">
-        <span>carrier</span>
-        <strong id="carrierBadge">standby</strong>
+      <div class="workflow-step" id="stepTune">
+        <span class="workflow-index">03</span>
+        <div>
+          <strong>lock a carrier</strong>
+          <p>tune, hop, recover, repeat</p>
+        </div>
       </div>
-      <div class="rail-card">
-        <span>recoveries</span>
-        <strong id="recoveryBadge">0</strong>
+      <div class="workflow-step" id="stepShape">
+        <span class="workflow-index">04</span>
+        <div>
+          <strong>shape the ghosts</strong>
+          <p>read the visuals while you mutilate the signal</p>
+        </div>
       </div>
     </section>
 
-    <section class="console" aria-label="haunted radio controls">
-      <div class="panel panel-dial">
-        <div class="panel-head">
-          <span>receiver</span>
-          <span id="frequencyReadout">96.4 MHz</span>
-        </div>
-
-        <canvas id="dialCanvas" width="920" height="480" aria-label="tuning dial"></canvas>
-
-        <div class="hint-row">
-          <span>drag / scroll / arrows to tune</span>
-          <span>space toggles power</span>
-        </div>
-
-        <div class="dial-footer">
-          <div class="footer-block">
-            <span>lock</span>
-            <strong id="lockState">off-air</strong>
-          </div>
-          <div class="footer-block">
-            <span>station</span>
-            <strong id="telemetryStation">0 / 0</strong>
-          </div>
-          <div class="footer-block footer-block-wide">
-            <span>runtime</span>
-            <strong id="runtimeStatus">receiver sleeping</strong>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel panel-readout">
-        <div class="panel-head">
-          <span>signal readout</span>
+    <section class="device-grid" aria-label="haunted radio interface">
+      <aside class="control-column panel-chassis">
+        <div class="column-head">
+          <span>transport + rituals</span>
           <span class="cursor"></span>
         </div>
 
-        <div class="station-block">
-          <div class="station-name" id="stationName">— dead air —</div>
-          <div class="station-meta" id="stationMeta">waiting for carrier</div>
+        <div class="transport-cluster">
+          <button id="powerBtn" class="transport-btn transport-btn-primary">power on</button>
+          <button id="scanBtn" class="transport-btn">scan</button>
+          <button id="recoverBtn" class="transport-btn">recover</button>
         </div>
 
-        <div class="meter-wrap" aria-hidden="true">
-          <div class="meter-label-row">
-            <span class="meter-label">signal / noise</span>
-            <span class="meter-detail" id="meterDetail">no analyser yet</span>
+        <div class="quick-guidance">
+          <div class="guidance-badge">flow</div>
+          <p id="guidanceLine">cache loading. once armed, either scan for a carrier or punch a preset first.</p>
+          <div class="hint-row">
+            <span>space = power</span>
+            <span>drag, scroll, arrows = tune</span>
           </div>
-          <canvas id="meterCanvas" width="920" height="120"></canvas>
         </div>
 
-        <div class="status-row">
-          <div class="status-chip" id="statusChip">standby</div>
-          <div class="status-text" id="statusText">loading stations…</div>
-        </div>
+        <section class="preset-bank">
+          <div class="column-head column-head-tight">
+            <span>scene presets</span>
+            <strong id="activePresetName">manual</strong>
+          </div>
+          <p class="preset-copy" id="presetSummary">raw machine state. tune first, then wreck it deliberately.</p>
+          <div class="preset-list" id="presetList"></div>
+        </section>
 
-        <div class="actions">
-          <button id="powerBtn" class="power-btn">power on</button>
-          <button id="scanBtn" class="secondary-btn">scan</button>
-          <button id="recoverBtn" class="secondary-btn">recover</button>
-        </div>
-
-        <div class="telemetry" aria-label="receiver telemetry">
-          <div class="telemetry-item">
+        <section class="telemetry-stack" aria-label="receiver telemetry">
+          <div class="mini-panel">
             <span>mode</span>
             <strong id="telemetryMode">standby</strong>
           </div>
-          <div class="telemetry-item">
+          <div class="mini-panel">
             <span>path</span>
             <strong id="telemetryPath">silent</strong>
           </div>
-          <div class="telemetry-item">
+          <div class="mini-panel">
+            <span>station</span>
+            <strong id="telemetryStation">0 / 0</strong>
+          </div>
+          <div class="mini-panel">
             <span>fallback</span>
             <strong id="fallbackMode">live api</strong>
           </div>
-          <div class="telemetry-item telemetry-item-wide">
+          <div class="mini-panel mini-panel-wide">
+            <span>runtime</span>
+            <strong id="runtimeStatus">receiver sleeping</strong>
+          </div>
+          <div class="mini-panel mini-panel-wide fault-panel">
             <span>last fault</span>
             <strong id="faultLine">none</strong>
           </div>
-        </div>
+        </section>
 
-        <div class="route-block" aria-label="signal route">
-          <div class="panel-head panel-head-tight">
-            <span>signal route</span>
+        <section class="log-panel">
+          <div class="column-head column-head-tight">
+            <span>event tape</span>
             <span id="hostBadge">unknown host</span>
           </div>
-          <div class="route-grid">
-            <div class="route-node">
-              <span>source</span>
-              <strong id="routeSource">live station</strong>
-            </div>
-            <div class="route-node">
-              <span>proxy</span>
-              <strong id="routeProxy">awaiting lock</strong>
-            </div>
-            <div class="route-node">
-              <span>output</span>
-              <strong id="routeOutput">silent bus</strong>
-            </div>
-            <div class="route-node">
-              <span>recovery</span>
-              <strong id="routeRecovery">ready</strong>
-            </div>
+          <div class="event-log" id="eventLog"></div>
+        </section>
+      </aside>
+
+      <section class="instrument-column">
+        <div class="instrument-header panel-chassis">
+          <div>
+            <span class="status-label">selected carrier</span>
+            <div class="station-name" id="stationName">— dead air —</div>
+            <div class="station-meta" id="stationMeta">waiting for carrier</div>
+          </div>
+          <div class="frequency-stack">
+            <span class="status-label">frequency</span>
+            <strong id="frequencyReadout">96.4 MHz</strong>
+            <small id="lockState">off-air</small>
           </div>
         </div>
-      </div>
 
-      <div class="panel panel-fx">
-        <div class="panel-head">
-          <span>degradation chain</span>
+        <div class="visual-stack">
+          <section class="panel-chassis dial-panel">
+            <div class="column-head">
+              <span>carrier navigator</span>
+              <strong id="signalQuality">quiet</strong>
+            </div>
+            <canvas id="dialCanvas" width="920" height="520" aria-label="tuning dial"></canvas>
+            <div class="dial-footer">
+              <div class="mini-panel">
+                <span>indexed field</span>
+                <strong id="bandmapCount">0 loaded</strong>
+              </div>
+              <div class="mini-panel">
+                <span>route source</span>
+                <strong id="routeSource">live station</strong>
+              </div>
+              <div class="mini-panel mini-panel-wide">
+                <span>route recovery</span>
+                <strong id="routeRecovery">ready</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="analysis-grid">
+            <div class="panel-chassis analysis-panel">
+              <div class="column-head column-head-tight">
+                <span>ghost oscilloscope</span>
+                <span id="meterDetail">no analyser yet</span>
+              </div>
+              <canvas id="scopeCanvas" width="920" height="220"></canvas>
+            </div>
+            <div class="panel-chassis analysis-panel">
+              <div class="column-head column-head-tight">
+                <span>spectral waterfall</span>
+                <span id="routeOutput">silent bus</span>
+              </div>
+              <canvas id="waterfallCanvas" width="920" height="220"></canvas>
+            </div>
+          </section>
+
+          <section class="panel-chassis route-panel">
+            <div class="column-head">
+              <span>signal route micrographics</span>
+              <strong id="routeProxy">awaiting lock</strong>
+            </div>
+            <canvas id="routeCanvas" width="920" height="180"></canvas>
+          </section>
+        </div>
+      </section>
+
+      <aside class="fx-column panel-chassis">
+        <div class="column-head">
+          <span>modulation rack</span>
           <span class="led led-green"></span>
         </div>
+        <p class="rack-copy">each control gets its own instrument sketch so you can see what kind of damage you’re dialing in instead of pushing blind web sliders like a savage.</p>
 
-        <div class="fx-grid">
-          <label class="fx-control">
-            <span class="fx-copy">
+        <div class="fx-rack">
+          <label class="fx-module">
+            <div class="fx-head">
               <span>decay</span>
               <strong id="decayValue">42</strong>
-            </span>
+            </div>
+            <canvas id="viz-decay" class="fx-viz" width="320" height="112" aria-hidden="true"></canvas>
             <input id="decaySlider" type="range" min="0" max="100" value="42">
-            <small>ghost-tail repeats and bloom</small>
+            <small>repeat bloom and ghost-tail hang time</small>
           </label>
 
-          <label class="fx-control">
-            <span class="fx-copy">
+          <label class="fx-module">
+            <div class="fx-head">
               <span>wobble</span>
               <strong id="wobbleValue">58</strong>
-            </span>
+            </div>
+            <canvas id="viz-wobble" class="fx-viz" width="320" height="112" aria-hidden="true"></canvas>
             <input id="wobbleSlider" type="range" min="0" max="100" value="58">
-            <small>frequency drift and capstan instability</small>
+            <small>capstan drift, wow, flutter, and pitch smear</small>
           </label>
 
-          <label class="fx-control">
-            <span class="fx-copy">
+          <label class="fx-module">
+            <div class="fx-head">
               <span>dirt</span>
               <strong id="dirtValue">24</strong>
-            </span>
+            </div>
+            <canvas id="viz-dirt" class="fx-viz" width="320" height="112" aria-hidden="true"></canvas>
             <input id="dirtSlider" type="range" min="0" max="100" value="24">
-            <small>tape warmth, not shredded speaker fuzz</small>
+            <small>preamp grit and tape warmth, not clown distortion</small>
           </label>
 
-          <label class="fx-control">
-            <span class="fx-copy">
+          <label class="fx-module">
+            <div class="fx-head">
               <span>void</span>
               <strong id="voidValue">54</strong>
-            </span>
+            </div>
+            <canvas id="viz-void" class="fx-viz" width="320" height="112" aria-hidden="true"></canvas>
             <input id="voidSlider" type="range" min="0" max="100" value="54">
-            <small>distance, room and tail decay</small>
+            <small>distance, room bloom, and fog around the source</small>
           </label>
 
-          <label class="fx-control">
-            <span class="fx-copy">
+          <label class="fx-module fx-module-wide">
+            <div class="fx-head">
               <span>static</span>
               <strong id="staticValue">10</strong>
-            </span>
+            </div>
+            <canvas id="viz-static" class="fx-viz" width="320" height="112" aria-hidden="true"></canvas>
             <input id="staticSlider" type="range" min="0" max="100" value="10">
-            <small>carrier hiss. zero should actually mean zero.</small>
+            <small>carrier hiss. zero now behaves like zero instead of fake-muted bullshit.</small>
           </label>
         </div>
+      </aside>
+    </section>
 
-        <div class="fx-notes">
-          <p>processed mode now keeps the noise floor low once a station locks, pushes wobble and delay into the foreground, and keeps dirt in the tape-saturation lane instead of clownshoes distortion.</p>
-        </div>
+    <section class="band-field panel-chassis">
+      <div class="column-head">
+        <span>carrier field</span>
+        <strong id="routeSourceReadout">nearby frequencies</strong>
       </div>
-
-      <div class="panel panel-bandmap">
-        <div class="panel-head">
-          <span>nearby carriers</span>
-          <span id="bandmapCount">0 loaded</span>
-        </div>
-        <div class="bandmap-list" id="bandmapList"></div>
-      </div>
+      <div class="bandmap-list" id="bandmapList"></div>
     </section>
   </main>
 
